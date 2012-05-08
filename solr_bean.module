@@ -1,0 +1,196 @@
+<?php
+
+/**
+ * @file
+ * Provides solr integration into beans.
+ */
+
+/**
+ * Implements hook_bean_types_api_info().
+ */
+function solr_bean_bean_types_api_info() {
+  return array(
+    'api' => bean_current_version(),
+  );
+}
+
+/**
+ * Implements hook_bean_types().
+ */
+function solr_bean_bean_types() {
+  $plugins = array();
+  $plugin_path = drupal_get_path('module', 'solr_bean');
+
+  $plugins['solr_bean'] = array(
+    'label' => t('Search Block'),
+    'handler' => array(
+      'class' => 'SolrBean',
+      'parent' => 'BeanPlugin',
+      'path' => $plugin_path . '/includes',
+      'file' => 'SolrBean.php',
+    ),
+    'editable' => TRUE,
+  );
+
+  return $plugins;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function solr_bean_theme($existing, $type, $theme, $path) {
+  return array(
+    'solr_bean_facet_settings_table' => array(
+      'render element' => 'form',
+    ),
+    'solr_bean_results' => array(
+      'variables' => array(
+        'results' => NULL,
+        'module' => NULL,
+        'search_page' => NULL,
+        'bean' => NULL,
+      ),
+      'template' => 'solr-bean-results',
+    ),
+  );
+}
+
+/**
+ * Form for solr bean filters.
+ */
+function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin) {
+  $form['#id'] = 'search-form';
+  $form['#attributes']['class'][] = 'search-form';
+  $form['#bean'] = $solr_bean_plugin->bean;
+
+  // Add all visible facets.
+  $facets = $solr_bean_plugin->buildFacets();
+  if ($facets) {
+    $form['f'] = array(
+      '#tree' => TRUE,
+    ) + $facets;
+  }
+
+  // Add a custom search form if required.
+  if ($solr_bean_plugin->bean->facets['keys']['visible']) {
+    $form['keys'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Enter terms'),
+      '#default_value' => isset($_GET['keys']) ? $_GET['keys'] : $solr_bean_plugin->bean->facets['keys']['default_value'],
+      '#size' => 20,
+      '#maxlength' => 255,
+    );
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Search'),
+    '#weight' => 100,
+  );
+
+  return $form;
+}
+
+/**
+ * Submit handler for solr bean filtering.
+ */
+function solr_bean_search_form_submit($form, &$form_state) {
+  $query = array();
+  if ($form_state['values']['keys']) {
+    $query['keys'] = $form_state['values']['keys'];
+  }
+  foreach ($form_state['values']['f'] as $key => $value) {
+    if ($value) {
+      $query['f'][] = $key . ':' . $value;
+    }
+  }
+  $form_state['redirect'] = array(current_path(), array('query' => $query));
+}
+
+/**
+ * Themes the facet settings form for the search bean.
+ */
+function theme_solr_bean_facet_settings_table($variables) {
+  $form = $variables['form'];
+
+  $output = '';
+
+  $header = array(
+    'label' => array('data' => t('Facet')),
+    'visible' => array('data' => t('Visible')),
+    'default_value' => array('data' => t('Default value')),
+  );
+
+  foreach (element_children($form) as $child) {
+    $facet = $form[$child]['#facet'];
+    // Builds rows.
+    $rows[$child] = array(
+      'data' => array(
+        check_plain($facet['label']) . "<div class='description'>" . filter_xss($facet['description']) . '</div>',
+        drupal_render($form[$child]['visible']),
+        drupal_render($form[$child]['default_value']),
+      ),
+    );
+  }
+
+  $output .= drupal_render_children($form);
+  $output .= theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => 'facetapi-realm-settings'),
+  ));
+
+  return $output;
+}
+
+/**
+ * Preprocess variables for solr-bean-results.tpl.php.
+ */
+function template_preprocess_solr_bean_results(&$variables) {
+  $variables['search_results'] = '';
+
+  // Default to search results.
+  if ($variables['bean']->results_view_mode == 'solr') {
+    foreach ($variables['results'] as $result) {
+      $variables['search_results'] .= theme('search_result', array('result' => $result, 'module' => $variables['module']));
+    }
+  }
+  // Render full node views.
+  else {
+    $variables['search_results'] = drupal_render($variables['results']);
+  }
+
+  $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . $variables['bean']->results_view_mode;
+
+  // Fetch our current query.
+  $env_id = NULL;
+  if (!empty($variables['search_page']->env_id)) {
+    $env_id = $variables['search_page']->env_id;
+  }
+  $query = apachesolr_current_query($env_id);
+
+  if ($query) {
+    $variables['query'] = $query;
+    $variables['response'] = apachesolr_static_response_cache($query->getSearcher());
+  }
+  if (empty($variables['response'])) {
+    $variables['description'] = '';
+    return;
+  }
+  $total = $variables['response']->response->numFound;
+  $params = $variables['query']->getParams();
+
+  $variables['description'] = t('Showing items @start through @end of @total.', array(
+    '@start' => $params['start'] + 1,
+    '@end' => $params['start'] + $params['rows'] - 1,
+    '@total' => $total,
+  ));
+  // Hide pager, if necessary.
+  if ($variables['bean']->settings['pager']) {
+    pager_default_initialize($total, $params['rows']);
+    $variables['pager'] = theme('pager', array('tags' => NULL));
+  }
+  else {
+    $variables['pager'] = '';
+  }
+}
