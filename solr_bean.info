@@ -3,5 +3,6 @@ description = "Provides solr page listing in bean form"
 core = "7.x"
 dependencies[] = "apachesolr"
 dependencies[] = "apachesolr_search"
+dependencies[] = "facetapi"
 dependencies[] = "bean"
 files[] = includes/SolrBean.php
