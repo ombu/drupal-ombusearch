@@ -20,6 +20,10 @@ class SolrBean extends BeanPlugin {
         'pager' => 1,
       ),
       'results_view_mode' => 'solr',
+      'sort' => array(
+        'field' => 'score',
+        'order' => 'desc',
+      ),
     );
     return $values;
   }
@@ -138,6 +142,33 @@ class SolrBean extends BeanPlugin {
       }
     }
 
+    // Sort settings.
+    $sort_fields = $this->getSortFieldOptions();
+    $form['sort'] = array(
+      '#tree' => TRUE,
+      '#type' => 'fieldset',
+      '#title' => t('Sort Order'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      'field' => array(
+        '#type' => 'select',
+        '#required' => TRUE,
+        '#title' => t('Sort By'),
+        '#options' => $this->getSortFieldOptions(),
+        '#default_value' => $bean->sort['field'],
+      ),
+      'order' => array(
+        '#type' => 'select',
+        '#required' => TRUE,
+        '#title' => t('Order'),
+        '#options' => array(
+          'desc' => 'Descending',
+          'asc' => 'Ascending',
+        ),
+        '#default_value' => $bean->sort['order'],
+      ),
+    );
+
     // General settings for solr search.
     $form['settings'] = array(
       '#tree' => TRUE,
@@ -208,6 +239,9 @@ class SolrBean extends BeanPlugin {
 
     // Retrieve the conditions that apply to this page.
     $conditions = apachesolr_search_conditions_default($search_page);
+
+    // Set the sort field and order.
+    $conditions['apachesolr_search_sort'] = $bean->sort['field'] . ' ' . $bean->sort['order'];
 
     // Retrieve the results of the search.
     $results = apachesolr_search_search_results($keys, $conditions, $search_page);
@@ -319,5 +353,25 @@ class SolrBean extends BeanPlugin {
       );
     }
     return $field;
+  }
+
+
+  /**
+   * Returns an array of field options.
+   */
+  protected function getSortFieldOptions() {
+    // Defaults.
+    $sort_fields = array(
+      'score' => 'Score',
+      'bs_sticky' => 'Sticky',
+      'ds_created' => 'Creation Date',
+      'ds_changed' => 'Updated Date',
+      'bundle' => 'Node Type',
+      'label' => 'Title',
+    );
+    foreach ($this->getFacetInfo() as $key => $facet) {
+      $sort_fields[$facet['field']] = $facet['label'];
+    }
+    return $sort_fields;
   }
 }
