@@ -13,12 +13,20 @@
  */
 ?>
 <?php if ($search_results): ?>
-  <ol class="search-results">
-    <?php print $search_results; ?>
-  </ol>
+  <?php if ($view_mode == 'search'): ?>
+    <ol class="<?php print $classes ?>">
+      <?php print $search_results; ?>
+    </ol>
+  <?php else: ?>
+    <div class="<?php print $classes ?>">
+      <?php print $search_results; ?>
+    </div>
+  <?php endif ?>
+
   <?php if (isset($pager)): ?>
     <?php print $pager; ?>
   <?php endif ?>
+
 <?php else : ?>
   <h2><?php print t('Your search yielded no results');?></h2>
   <?php print search_help('search#noresults', drupal_help_arg()); ?>

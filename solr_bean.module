@@ -149,6 +149,9 @@ function theme_solr_bean_facet_settings_table($variables) {
 function template_preprocess_solr_bean_results(&$variables) {
   $variables['search_results'] = '';
 
+  $variables['classes_array'][] = 'solr-bean-' . $variables['bean']->results_view_mode;
+  $variables['view_mode'] = $variables['bean']->results_view_mode;
+
   // Default to search results.
   if ($variables['bean']->results_view_mode == 'solr') {
     foreach ($variables['results'] as $result) {
