@@ -36,6 +36,35 @@ function solr_bean_bean_types() {
 }
 
 /**
+ * Implements hook_facetapi_url_processors().
+ */
+function solr_bean_facetapi_url_processors() {
+  return array(
+    'solr_bean_url_processor' => array(
+      'handler' => array(
+        'label' => t('Helper URL processor for solr beans.'),
+        'class' => 'SolrBeanUrlProcessor',
+      ),
+    ),
+  );
+}
+
+/**
+ * Allows for alterations to the searcher definitions.
+ *
+ * @param array &$searcher_info
+ *   The return values of hook_facetapi_searcher_info() implementations.
+ *
+ * @see hook_facetapi_searcher_info()
+ */
+function solr_bean_facetapi_searcher_info_alter(array &$searcher_info) {
+  foreach ($searcher_info as &$info) {
+    // Use solr bean wrapper for url processing.
+    $info['url processor'] = 'solr_bean_url_processor';
+  }
+}
+
+/**
  * Implements hook_theme().
  */
 function solr_bean_theme($existing, $type, $theme, $path) {
@@ -189,8 +218,8 @@ function template_preprocess_solr_bean_results(&$variables) {
   ));
   // Hide pager, if necessary.
   if ($variables['bean']->settings['pager']) {
-    pager_default_initialize($total, $params['rows']);
-    $variables['pager'] = theme('pager', array('tags' => NULL));
+    pager_default_initialize($total, $params['rows'], $variables['bean']->settings['pager_element']);
+    $variables['pager'] = theme('pager', array('tags' => NULL, 'element' => $variables['bean']->settings['pager_element']));
   }
   else {
     $variables['pager'] = '';
