@@ -158,9 +158,8 @@ function template_preprocess_solr_bean_results(&$variables) {
       $variables['search_results'] .= theme('search_result', array('result' => $result, 'module' => $variables['module']));
     }
   }
-  // Render full node views.
   else {
-    $variables['search_results'] = drupal_render($variables['results']);
+    $variables['search_results'] = $variables['results'];
   }
 
   $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . $variables['bean']->results_view_mode;

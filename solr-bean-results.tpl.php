@@ -19,7 +19,7 @@
     </ol>
   <?php else: ?>
     <div class="<?php print $classes ?>">
-      <?php print $search_results; ?>
+      <?php print render($search_results); ?>
     </div>
   <?php endif ?>
 
