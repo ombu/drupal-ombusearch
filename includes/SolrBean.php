@@ -620,7 +620,7 @@ class SolrBean extends BeanPlugin {
 
     $facets = array();
     foreach ($adapter->getEnabledFacets() as $facet) {
-      if ($this->bean->facets[$facet['name']]['visible']) {
+      if (isset($this->bean->facets[$facet['name']]) && $this->bean->facets[$facet['name']]['visible']) {
         $processor = $adapter->getProcessor($facet['name']);
         $facets[$facet['name']] = $this->buildFacetField($facet, $processor->getBuild());
       }
