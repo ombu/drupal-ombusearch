@@ -13,9 +13,9 @@
  */
 ?>
 <?php if ($search_results): ?>
-  <div class="<?php print $classes ?>">
+  <ol class="<?php print $classes ?>">
     <?php print render($search_results); ?>
-  </div>
+  </ol>
 
   <?php if (isset($pager)): ?>
     <?php print $pager; ?>

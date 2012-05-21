@@ -50,12 +50,7 @@ function solr_bean_facetapi_url_processors() {
 }
 
 /**
- * Allows for alterations to the searcher definitions.
- *
- * @param array &$searcher_info
- *   The return values of hook_facetapi_searcher_info() implementations.
- *
- * @see hook_facetapi_searcher_info()
+ * Implements hook_facetapi_search_info_alter().
  */
 function solr_bean_facetapi_searcher_info_alter(array &$searcher_info) {
   foreach ($searcher_info as &$info) {
@@ -68,7 +63,7 @@ function solr_bean_facetapi_searcher_info_alter(array &$searcher_info) {
  * Implements hook_theme().
  */
 function solr_bean_theme($existing, $type, $theme, $path) {
-  return array(
+  $themes = array(
     'solr_bean_facet_settings_table' => array(
       'render element' => 'form',
     ),
@@ -80,8 +75,57 @@ function solr_bean_theme($existing, $type, $theme, $path) {
         'bean' => NULL,
       ),
       'template' => 'solr-bean-results',
+      'pattern' => 'solr_bean_results__',
     ),
   );
+
+  return $themes;
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function solr_bean_theme_registry_alter(&$theme_registry) {
+  global $theme;
+
+  // Allow template suggestions to live in solr_bean module.
+  $module_path = drupal_get_path('module', 'solr_bean');
+  $theme_registry_copy = $theme_registry;
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', $theme, $module_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+}
+
+/**
+ * Implements hook_solr_bean_view_modes().
+ *
+ * Exposes default search results and all node view types as view modes for solr
+ * beans.
+ */
+function solr_bean_solr_bean_view_modes() {
+  // Default search results that uses theme_search_result() for each result.
+  $view_mode_options['solr'] = t('Search results');
+
+  // Pull in all node view types.
+  $entity_info = entity_get_info('node');
+  foreach ($entity_info['view modes'] as $machine_name => $info) {
+    if ($info['custom settings'] === TRUE) {
+      $view_mode_options[$machine_name] = $info['label'];
+    }
+  }
+
+  return $view_mode_options;
+}
+
+/**
+ * Returns all available view modes for solr beans.
+ */
+function solr_bean_view_modes() {
+  $view_modes = module_invoke_all('solr_bean_view_modes');
+
+  // Allow other module to alter view modes.
+  drupal_alter('solr_bean_view_modes', $view_modes);
+
+  return $view_modes;
 }
 
 /**
@@ -176,22 +220,12 @@ function theme_solr_bean_facet_settings_table($variables) {
  * Preprocess variables for solr-bean-results.tpl.php.
  */
 function template_preprocess_solr_bean_results(&$variables) {
-  $variables['search_results'] = '';
+  $bean = $variables['bean'];
 
-  $variables['classes_array'][] = 'solr-bean-' . $variables['bean']->results_view_mode;
-  $variables['view_mode'] = $variables['bean']->results_view_mode;
+  $variables['classes_array'][] = 'solr-bean-' . $bean->results_view_mode;
+  $variables['view_mode'] = $bean->results_view_mode;
 
-  // Default to search results.
-  if ($variables['bean']->results_view_mode == 'solr') {
-    foreach ($variables['results'] as $result) {
-      $variables['search_results'] .= theme('search_result', array('result' => $result, 'module' => $variables['module']));
-    }
-  }
-  else {
-    $variables['search_results'] = $variables['results'];
-  }
-
-  $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . $variables['bean']->results_view_mode;
+  $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . $bean->results_view_mode;
 
   // Fetch our current query.
   $env_id = NULL;
@@ -217,11 +251,46 @@ function template_preprocess_solr_bean_results(&$variables) {
     '@total' => $total,
   ));
   // Hide pager, if necessary.
-  if ($variables['bean']->settings['pager']) {
-    pager_default_initialize($total, $params['rows'], $variables['bean']->settings['pager_element']);
-    $variables['pager'] = theme('pager', array('tags' => NULL, 'element' => $variables['bean']->settings['pager_element']));
+  if ($bean->settings['pager']) {
+    pager_default_initialize($total, $params['rows'], $bean->settings['pager_element']);
+    $variables['pager'] = theme('pager', array('tags' => NULL, 'element' => $bean->settings['pager_element']));
   }
   else {
     $variables['pager'] = '';
+  }
+
+  // Handle the specific results view mode of `solr`.
+  // Other modules providing view modules should set
+  // $variables['search_results'] in their own preprocess functions, otherwise
+  // results will be rendered using node_view in
+  // template_process_solr_bean_results().
+  if ($bean->results_view_mode == 'solr') {
+    foreach ($variables['results'] as $result) {
+      $variables['search_results'][] = array(
+        '#theme' => 'search_result',
+        '#result' => $result,
+        '#module' => $variables['module'],
+      );
+    }
+  }
+}
+
+/**
+ * Process variables for solr-bean-results.tpl.php.
+ */
+function template_process_solr_bean_results__solr(&$variables) {
+}
+
+/**
+ * Process variables for solr-bean-results.tpl.php.
+ */
+function template_process_solr_bean_results(&$variables) {
+  // Default to rendering results using node_view.
+  if (empty($variables['search_results'])) {
+    $nids = array();
+    foreach ($variables['results'] as $result) {
+      $nids[] = $result['node']->entity_id;
+    }
+    $variables['search_results'] = node_view_multiple(node_load_multiple($nids), $variables['bean']->results_view_mode);
   }
 }
