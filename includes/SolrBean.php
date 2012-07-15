@@ -260,7 +260,7 @@ class SolrBean extends ombubeans_color {
     apachesolr_suppress_blocks($search_page->env_id, $old_suppress);
 
     // Render result in our custom theme, to allow for different display modes.
-    $build_results['search_results']['#theme'] = array('solr_bean_results__' . $bean->results_view_mode, 'solr_bean_results');
+    $build_results['search_results']['#theme'] = 'solr_bean_results';
     $build_results['search_results']['#bean'] = $bean;
 
     // Adds the search form to the page.

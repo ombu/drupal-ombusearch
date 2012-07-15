@@ -75,24 +75,10 @@ function solr_bean_theme($existing, $type, $theme, $path) {
         'bean' => NULL,
       ),
       'template' => 'solr-bean-results',
-      'pattern' => 'solr_bean_results__',
     ),
   );
 
   return $themes;
-}
-
-/**
- * Implements hook_theme_registry_alter().
- */
-function solr_bean_theme_registry_alter(&$theme_registry) {
-  global $theme;
-
-  // Allow template suggestions to live in solr_bean module.
-  $module_path = drupal_get_path('module', 'solr_bean');
-  $theme_registry_copy = $theme_registry;
-  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', $theme, $module_path);
-  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
 }
 
 /**
@@ -225,7 +211,7 @@ function template_preprocess_solr_bean_results(&$variables) {
   $variables['classes_array'][] = 'solr-bean-' . $bean->results_view_mode;
   $variables['view_mode'] = $bean->results_view_mode;
 
-  $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . $bean->results_view_mode;
+  $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . str_replace('-', '_', $bean->results_view_mode);
 
   // Fetch our current query.
   $env_id = NULL;
@@ -278,12 +264,6 @@ function template_preprocess_solr_bean_results(&$variables) {
 /**
  * Process variables for solr-bean-results.tpl.php.
  */
-function template_process_solr_bean_results__solr(&$variables) {
-}
-
-/**
- * Process variables for solr-bean-results.tpl.php.
- */
 function template_process_solr_bean_results(&$variables) {
   // Default to rendering results using node_view.
   if (empty($variables['search_results'])) {
@@ -291,6 +271,12 @@ function template_process_solr_bean_results(&$variables) {
     foreach ($variables['results'] as $result) {
       $nids[] = $result['node']->entity_id;
     }
+    // Default to teaser if view mode isn't a valid node view.
+    $entity_info = entity_get_info('node');
+    if (!isset($entity_info['view modes'][$variables['bean']->results_view_mode])) {
+      $variables['bean']->results_view_mode = 'teaser';
+    }
+
     $variables['search_results'] = node_view_multiple(node_load_multiple($nids), $variables['bean']->results_view_mode);
   }
 }
