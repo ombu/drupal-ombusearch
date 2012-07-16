@@ -659,7 +659,7 @@ class SolrBean extends ombubeans_color {
       'ds_created' => 'Creation Date',
       'ds_changed' => 'Updated Date',
       'bundle' => 'Node Type',
-      'label' => 'Title',
+      'sort_label' => 'Title',
     );
     foreach ($this->getFacetInfo() as $key => $facet) {
       $sort_fields[$facet['field']] = $facet['label'];
