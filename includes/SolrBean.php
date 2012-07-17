@@ -605,48 +605,52 @@ class SolrBean extends ombubeans_color {
    * Builds full facet info on a search page.
    */
   public function buildFacets() {
-    $realm = facetapi_realm_load('block');
-    $adapter = $this->getFacetapiAdapter();
-    $adapter->processFacets();
+    $search_page = apachesolr_search_page_load($this->bean->search_page);
 
-    $facets = array();
-    foreach ($adapter->getEnabledFacets() as $facet) {
-      if (isset($this->bean->facets[$facet['name']]) && $this->bean->facets[$facet['name']]['visible']) {
-        $processor = $adapter->getProcessor($facet['name']);
-        $facets[$facet['name']] = $this->buildFacetField($facet, $processor->getBuild());
-      }
-    }
+    // Get facet render elements.
+    module_load_include('inc', 'facetapi', 'facetapi.block');
+    $searcher = apachesolr_current_query($search_page->env_id)->getSearcher();
+    $elements = facetapi_build_realm($searcher, 'block');
 
-    return $facets;
-  }
+    $build = array();
+    $ids = array();
+    foreach ($this->bean->facets as $key => $facet) {
+      if (!$facet['visible'] || !isset($elements[$key])) {
+        continue;
+      }
 
-  /**
-   * Builds a facet field for use in the bean display form.
-   */
-  protected function buildFacetField($facet, $build) {
-    $facet_values = array();
-    if (isset($_GET['f'])) {
-      foreach ($_GET['f'] as $f) {
-        list($key, $value) = explode(':', $f);
-        $facet_values[$key] = $value;
-      }
-    }
-    $field = array();
-    if ($build) {
-      $options = array();
-      foreach ($build as $key => $data) {
-        $options[$key] = $data['#markup'];
-      }
-      $field = array(
-        '#type' => 'select',
-        '#title' => $facet['label'],
-        '#options' => array('- Any - ') + $options,
-        '#default_value' => isset($facet_values[$facet['name']]) ? $facet_values[$facet['name']] : $this->bean->facets[$facet['name']]['default_value'],
+      $delta = "facetapi_{$key}";
+
+      $block = new stdClass();
+      $block->visibility = TRUE;
+      $block->enabled = TRUE;
+      $block->module = 'facetapi';
+      $block->subject = theme('facetapi_title', array('title' => $elements[$key]['#title']));
+      $build[$delta] = $elements[$key];
+      $block->region = NULL;
+      $block->delta = 'apachesolr-' . $key;
+      // @todo: the final themed block's div id attribute does not coincide with "real" block's id (see facetapi_get_delta_map())
+      $build[$delta]['#block'] = $block;
+      $build[$delta]['#theme_wrappers'][] = 'block';
+      $build['#sorted'] = TRUE;
+
+      $ids[] = array(
+        'selector' => '#' . $build[$delta]['#attributes']['id'],
+        'title' => $build[$delta]['#title'],
       );
     }
-    return $field;
-  }
 
+    // Add select widget js.
+    if ($ids) {
+      $build['#attached']['js'][] = drupal_get_path('module', 'solr_bean') . '/solr-bean-facet.js';
+      $build['#attached']['js'][] = array(
+        'data' => array('solrBeanSelectWidget' => $ids),
+        'type' => 'setting',
+      );
+    }
+
+    return $build;
+  }
 
   /**
    * Returns an array of field options.

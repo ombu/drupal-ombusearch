@@ -23,6 +23,29 @@ class SolrBeanUrlProcessor extends FacetapiUrlProcessorStandard {
   }
 
   /**
+   * Returns the path for a facet item.
+   *
+   * @param array $facet
+   *   The facet definition.
+   * @param array $values
+   *   An array containing the item's values being added to or removed from the
+   *   query string dependent on whether or not the item is active.
+   * @param int $active
+   *   An integer flagging whether the item is active or not.
+   *
+   * @return string
+   *   The path of the facet.
+   */
+  public function getFacetPath(array $facet, array $values, $active) {
+    if (isset($this->bean)) {
+      return current_path();
+    }
+    else {
+      return parent::getFacetPath($facet, $values, $active);
+    }
+  }
+
+  /**
    * Implements FacetapiUrlProcessor::fetchParams().
    *
    * Pulls facet params from the $_GET variable, or sets them via the solr_bean

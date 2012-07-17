@@ -125,9 +125,7 @@ function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin)
   // Add all visible facets.
   $facets = $solr_bean_plugin->buildFacets();
   if ($facets) {
-    $form['f'] = array(
-      '#tree' => TRUE,
-    ) + $facets;
+    $form['f'] = $facets;
   }
 
   // Add a custom search form if required.
@@ -157,11 +155,6 @@ function solr_bean_search_form_submit($form, &$form_state) {
   $query = array();
   if ($form_state['values']['keys']) {
     $query['keys'] = $form_state['values']['keys'];
-  }
-  foreach ($form_state['values']['f'] as $key => $value) {
-    if ($value) {
-      $query['f'][] = $key . ':' . $value;
-    }
   }
   $form_state['redirect'] = array(current_path(), array('query' => $query));
 }
