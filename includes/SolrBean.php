@@ -656,10 +656,21 @@ class SolrBean extends ombubeans_color {
    * Returns an array of field options.
    */
   protected function getSortFieldOptions() {
+    // Get a stub apachesolr query.
+    $query = apachesolr_drupal_query('solr_bean');
+
+    // Allow other modules to add their own sorts.
+    foreach (module_implements('apachesolr_query_prepare') as $module) {
+      $function_name = $module . '_apachesolr_query_prepare';
+      $function_name($query);
+    }
+
+    // Get all available sorts for solr.
     $sorts = array();
-    foreach (apachesolr_drupal_query('solr_bean')->getAvailableSorts() as $key => $value) {
+    foreach ($query->getAvailableSorts() as $key => $value) {
       $sorts[$key] = $value['title'];
     }
+
     return $sorts;
   }
 }
