@@ -656,18 +656,10 @@ class SolrBean extends ombubeans_color {
    * Returns an array of field options.
    */
   protected function getSortFieldOptions() {
-    // Defaults.
-    $sort_fields = array(
-      'score' => 'Score',
-      'bs_sticky' => 'Sticky',
-      'ds_created' => 'Creation Date',
-      'ds_changed' => 'Updated Date',
-      'bundle' => 'Node Type',
-      'sort_label' => 'Title',
-    );
-    foreach ($this->getFacetInfo() as $key => $facet) {
-      $sort_fields[$facet['field']] = $facet['label'];
+    $sorts = array();
+    foreach (apachesolr_drupal_query('solr_bean')->getAvailableSorts() as $key => $value) {
+      $sorts[$key] = $value['title'];
     }
-    return $sort_fields;
+    return $sorts;
   }
 }
