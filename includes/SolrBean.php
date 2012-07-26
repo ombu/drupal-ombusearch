@@ -239,7 +239,7 @@ class SolrBean extends ombubeans_color {
     // Retrieve the conditions that apply to this block.
     $conditions = apachesolr_search_conditions_default($search_page);
     $conditions['f'] = array();
-    $keys = isset($conditions['keys']) ? $conditions['keys'] : $bean->facets['keys']['default_value'];
+    $keys = isset($_GET['keys']) ? $_GET['keys'] : $bean->facets['keys']['default_value'];
 
     // Set the sort field and order.
     $conditions['apachesolr_search_sort'] = $bean->sort['field'] . ' ' . $bean->sort['order'];
