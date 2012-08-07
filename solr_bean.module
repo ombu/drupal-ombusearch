@@ -258,18 +258,29 @@ function template_preprocess_solr_bean_results(&$variables) {
  * Process variables for solr-bean-results.tpl.php.
  */
 function template_process_solr_bean_results(&$variables) {
-  // Default to rendering results using node_view.
+  // Default to rendering results using entity_view.
   if (empty($variables['search_results'])) {
-    $nids = array();
     foreach ($variables['results'] as $result) {
-      $nids[] = $result['node']->entity_id;
-    }
-    // Default to teaser if view mode isn't a valid node view.
-    $entity_info = entity_get_info('node');
-    if (!isset($entity_info['view modes'][$variables['bean']->results_view_mode])) {
-      $variables['bean']->results_view_mode = 'teaser';
-    }
+      $entity_type = $result['entity_type'];
+      $entity_id = $result['fields']['entity_id'];
 
-    $variables['search_results'] = node_view_multiple(node_load_multiple($nids), $variables['bean']->results_view_mode);
+      // Default to teaser if view mode isn't a valid node view.
+      $entity_info = entity_get_info($entity_type);
+      if (!isset($entity_info['view modes'][$variables['bean']->results_view_mode])) {
+        $variables['bean']->results_view_mode = 'teaser';
+      }
+
+      // Render entity appropriately.
+      $entity = entity_load($entity_type, array($entity_id));
+      $rendered_result = entity_view(
+        $entity_type,
+        $entity,
+        $variables['bean']->results_view_mode
+      );
+      $rendered_result = $rendered_result[$entity_type][$entity_id];
+      $rendered_result['#result'] = $result;
+
+      $variables['search_results'][$entity_id] = $rendered_result;
+    }
   }
 }
