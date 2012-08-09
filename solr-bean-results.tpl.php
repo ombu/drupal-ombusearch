@@ -12,7 +12,7 @@
  * @see template_preprocess_search_results()
  */
 ?>
-<?php if ($search_results): ?>
+<?php if (isset($search_results)): ?>
   <div class="<?php print $classes ?>">
     <?php print render($search_results); ?>
   </div>
