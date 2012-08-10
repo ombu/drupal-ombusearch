@@ -14,7 +14,9 @@
 ?>
 <?php if (isset($search_results)): ?>
   <div class="<?php print $classes ?>">
-    <?php print render($search_results); ?>
+    <?php foreach ($search_results as $result): ?>
+      <?php print render($result); ?>
+    <?php endforeach ?>
   </div>
 
   <?php if (isset($pager)): ?>
