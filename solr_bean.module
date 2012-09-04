@@ -271,16 +271,22 @@ function template_process_solr_bean_results(&$variables) {
       }
 
       // Render entity appropriately.
-      $entity = entity_load($entity_type, array($entity_id));
-      $rendered_result = entity_view(
-        $entity_type,
-        $entity,
-        $variables['bean']->results_view_mode
-      );
-      $rendered_result = $rendered_result[$entity_type][$entity_id];
-      $rendered_result['#result'] = $result;
+      if ($entity_info) {
+        $entity = entity_load($entity_type, array($entity_id));
+        $rendered_result = entity_view(
+          $entity_type,
+          $entity,
+          $variables['bean']->results_view_mode
+        );
+        $rendered_result = $rendered_result[$entity_type][$entity_id];
+        $rendered_result['#result'] = $result;
 
-      $variables['search_results'][$entity_id] = $rendered_result;
+        $variables['search_results'][$entity_id] = $rendered_result;
+      }
+      else {
+        // todo: if result is not an entity, then render using default solr
+        // result.
+      }
     }
   }
 }
