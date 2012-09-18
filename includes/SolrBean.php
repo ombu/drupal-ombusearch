@@ -189,7 +189,7 @@ class SolrBean extends ombubeans_color {
     $form['settings']['results_per_page'] = array(
       '#type' => 'select',
       '#title' => t('Number of results to show'),
-      '#default_value' => isset($bean->settings['results_per_page']) ? $bean->settings['results_per_page'] : $search_page->settings['apachesolr_search_per_page'],
+      '#default_value' => isset($bean->settings['results_per_page']) ? $bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'],
       '#options' => array(
         10 => 10,
         20 => 20,
@@ -251,13 +251,13 @@ class SolrBean extends ombubeans_color {
     $build = array();
 
     // Suppress all solr blocks temporarily.
-    $old_suppress = apachesolr_suppress_blocks($search_page->env_id);
-    apachesolr_suppress_blocks($search_page->env_id, TRUE);
+    $old_suppress = apachesolr_suppress_blocks($search_page['env_id']);
+    apachesolr_suppress_blocks($search_page['env_id'], TRUE);
 
     // Build our page and allow modification.
     $build_results = apachesolr_search_search_page_custom($results, $search_page, $build);
 
-    apachesolr_suppress_blocks($search_page->env_id, $old_suppress);
+    apachesolr_suppress_blocks($search_page['env_id'], $old_suppress);
 
     // Render result in our custom theme, to allow for different display modes.
     $build_results['search_results']['#theme'] = 'solr_bean_results';
@@ -287,14 +287,14 @@ class SolrBean extends ombubeans_color {
     $solrsort = isset($conditions['apachesolr_search_sort']) ? $conditions['apachesolr_search_sort'] : '';
 
     try {
-      $solr = apachesolr_get_solr($search_page->env_id);
+      $solr = apachesolr_get_solr($search_page['env_id']);
       // Default parameters.
       $params['fq'] = isset($conditions['fq']) ? $conditions['fq'] : array();
 
       // Set the number of rows from the bean.
-      $params['rows'] = isset($this->bean->settings['results_per_page']) ? $this->bean->settings['results_per_page'] : $search_page->settings['apachesolr_search_per_page'];
+      $params['rows'] = isset($this->bean->settings['results_per_page']) ? $this->bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'];
 
-      if (empty($search_page->settings['apachesolr_search_spellcheck'])) {
+      if (empty($search_page['settings']['apachesolr_search_spellcheck'])) {
         // Spellcheck needs to have a string as false/true
         $params['spellcheck'] = 'false';
       }
@@ -309,7 +309,7 @@ class SolrBean extends ombubeans_color {
       // This is the object that knows about the query coming from the user.
       $page = $this->bean->settings['pager'] ? pager_find_page() : 0;
 
-      $query = apachesolr_drupal_query('apachesolr', $params, $solrsort, $search_page->search_path, $solr);
+      $query = apachesolr_drupal_query('apachesolr', $params, $solrsort, $search_page['search_path'], $solr);
       apachesolr_search_basic_params($query);
 
       if ($query->getParam('q')) {
@@ -609,7 +609,7 @@ class SolrBean extends ombubeans_color {
 
     // Get facet render elements.
     module_load_include('inc', 'facetapi', 'facetapi.block');
-    $searcher = apachesolr_current_query($search_page->env_id)->getSearcher();
+    $searcher = apachesolr_current_query($search_page['env_id'])->getSearcher();
     $elements = facetapi_build_realm($searcher, 'block');
 
     $build = array();
