@@ -270,7 +270,7 @@ class SolrBean extends BeanPlugin {
       $build_results['search_form'] = $search_form;
     }
 
-    $content['search'] = $build_results;
+    $content['bean'][$bean->bid]['search'] = $build_results;
 
     return $content;
   }
