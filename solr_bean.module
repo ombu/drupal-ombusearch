@@ -208,8 +208,8 @@ function template_preprocess_solr_bean_results(&$variables) {
 
   // Fetch our current query.
   $env_id = NULL;
-  if (!empty($variables['search_page']->env_id)) {
-    $env_id = $variables['search_page']->env_id;
+  if (!empty($variables['search_page']['env_id'])) {
+    $env_id = $variables['search_page']['env_id'];
   }
   $query = apachesolr_current_query($env_id);
 
