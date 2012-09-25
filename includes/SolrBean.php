@@ -187,16 +187,10 @@ class SolrBean extends BeanPlugin {
 
     $search_page = apachesolr_search_page_load($bean->search_page);
     $form['settings']['results_per_page'] = array(
-      '#type' => 'select',
+      '#type' => 'textfield',
       '#title' => t('Number of results to show'),
       '#default_value' => isset($bean->settings['results_per_page']) ? $bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'],
-      '#options' => array(
-        10 => 10,
-        20 => 20,
-        30 => 30,
-        40 => 40,
-        50 => 50,
-      ),
+      '#element_validate' => array('element_validate_number'),
     );
 
     return $form;
