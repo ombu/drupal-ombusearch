@@ -347,7 +347,7 @@ class SolrBean extends BeanPlugin {
       watchdog('Apache Solr', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
       apachesolr_failure(t('Solr search'), $keys);
     }
-    return $results;
+    return array();
   }
 
   /**
