@@ -6,9 +6,9 @@ pull faceted results directly from solr.
 
 Requirements:
 
-  - apachesolr.module (tested with 7.x-1.0-rc3)
-  - apachesolr_pages.module (tested with 7.x-1.0-rc3)
-  - facetapi.module
+  - apachesolr.module (tested with 7.x-1.5)
+  - apachesolr_pages.module (tested with 7.x-1.5)
+  - facetapi.module (tested with 7.x-1.3)
 
 Usage
 -----
