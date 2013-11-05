@@ -73,6 +73,7 @@ function solr_bean_theme($existing, $type, $theme, $path) {
         'module' => NULL,
         'search_page' => NULL,
         'bean' => NULL,
+        'search_results' => array(),
       ),
       'template' => 'solr-bean-results',
     ),

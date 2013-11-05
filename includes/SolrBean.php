@@ -303,7 +303,7 @@ class SolrBean extends BeanPlugin {
       // This is the object that knows about the query coming from the user.
       $page = $this->bean->settings['pager'] ? pager_find_page() : 0;
 
-      $query = apachesolr_drupal_query('apachesolr', $params, $solrsort, $search_page['search_path'], $solr);
+      $query = apachesolr_drupal_query('apachesolr', $params, $solrsort, $search_page->search_path, $solr);
 
       // Add flag to indicate this is a solrbean search.
       $query->isSolrBean = TRUE;
