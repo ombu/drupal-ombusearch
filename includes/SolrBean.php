@@ -27,7 +27,6 @@ class SolrBean extends BeanPlugin {
       'settings' => array(
         'pager' => 1,
       ),
-      'results_view_mode' => 'solr',
       'sort' => array(
         'field' => 'score',
         'order' => 'desc',
@@ -44,15 +43,6 @@ class SolrBean extends BeanPlugin {
 
     // Set the bean for later use.
     $this->setBean($bean);
-
-    // Let the user choose which view mode the results should be displayed as.
-    $form['results_view_mode'] = array(
-      '#title' => t('Results View Mode'),
-      '#type' => 'select',
-      '#options' => solr_bean_view_modes(),
-      '#description' => 'Select how you would like the node results to be displayed',
-      '#default_value' => $bean->results_view_mode,
-    );
 
     // @todo: make search page configurable, and show facets dynamically based
     // on which search page is selected.  For now, just default to core_search.
@@ -253,10 +243,6 @@ class SolrBean extends BeanPlugin {
 
     apachesolr_suppress_blocks($search_page['env_id'], $old_suppress);
 
-    // Render result in our custom theme, to allow for different display modes.
-    $build_results['search_results']['#theme'] = 'solr_bean_results';
-    $build_results['search_results']['#bean'] = $bean;
-
     // Adds the search form to the page.
     $search_form = drupal_get_form('solr_bean_search_form', $this);
     if (isset($search_form['f']) || isset($search_form['keys'])) {
@@ -264,7 +250,12 @@ class SolrBean extends BeanPlugin {
       $build_results['search_form'] = $search_form;
     }
 
-    $content['bean'][$bean->bid]['search'] = $build_results;
+    $content['bean'][$bean->delta]['search'] = $build_results;
+
+    // Allow bean styles to alter build.
+    if (module_exists('bean_style')) {
+      bean_style_view_alter($content, $bean);
+    }
 
     return $content;
   }
