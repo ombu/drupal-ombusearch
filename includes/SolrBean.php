@@ -590,8 +590,11 @@ class SolrBean extends BeanPlugin {
    */
   protected function getFacetInfo() {
     $adapter = $this->getFacetapiAdapter();
-    $adapter->processFacets();
-    return $adapter->getEnabledFacets();
+    if ($adapter) {
+      $adapter->processFacets();
+      return $adapter->getEnabledFacets();
+    }
+    return array();
   }
 
   /**
