@@ -594,7 +594,6 @@ class SolrBean extends BeanPlugin {
       $adapter->processFacets();
       return $adapter->getEnabledFacets();
     }
-    return array();
   }
 
   /**
@@ -654,6 +653,9 @@ class SolrBean extends BeanPlugin {
   protected function getSortFieldOptions() {
     // Get a stub apachesolr query.
     $query = apachesolr_drupal_query('solr_bean');
+
+    // Mark this query as being used by SolrBean.
+    $query->isSolrBean = TRUE;
 
     // Allow other modules to add their own sorts.
     foreach (module_implements('apachesolr_query_prepare') as $module) {
