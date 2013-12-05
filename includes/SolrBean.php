@@ -592,7 +592,12 @@ class SolrBean extends BeanPlugin {
     $adapter = $this->getFacetapiAdapter();
     if ($adapter) {
       $adapter->processFacets();
-      return $adapter->getEnabledFacets();
+      $facets = $adapter->getEnabledFacets();
+
+      // Allow other modules to limit the displayed facets for a solr block.
+      drupal_alter('solr_bean_facets', $facets);
+
+      return $facets;
     }
   }
 
