@@ -239,6 +239,7 @@ class SolrBean extends BeanPlugin {
     apachesolr_suppress_blocks($search_page['env_id'], TRUE);
 
     // Build our page and allow modification.
+    $search_page['solr_bean'] = TRUE;
     $build_results = apachesolr_search_search_page_custom($results, $search_page, $build);
 
     apachesolr_suppress_blocks($search_page['env_id'], $old_suppress);
