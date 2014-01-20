@@ -220,12 +220,6 @@ class SolrBean extends BeanPlugin {
       return $content;
     }
 
-    // Abort if solr isn't running.
-    if (!apachesolr_current_query($search_page['env_id'])) {
-      drupal_set_message(t('Solr is not running'), 'error');
-      return $content;
-    }
-
     // Retrieve the conditions that apply to this block.
     $conditions = apachesolr_search_conditions_default($search_page);
     $conditions['f'] = array();
