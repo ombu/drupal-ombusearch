@@ -610,7 +610,13 @@ class SolrBean extends BeanPlugin {
 
     // Get facet render elements.
     module_load_include('inc', 'facetapi', 'facetapi.block');
-    $searcher = apachesolr_current_query($search_page['env_id'])->getSearcher();
+    $query = apachesolr_current_query($search_page['env_id']);
+
+    if (!$query) {
+      return '';
+    }
+
+    $searcher = $query->getSearcher();
     $elements = facetapi_build_realm($searcher, 'block');
 
     $build = array();
