@@ -120,6 +120,7 @@ class SolrBean extends BeanPlugin {
           '#title_display' => 'invisible',
           '#options' => array('' => '- None -') + call_user_func($facet['values callback'], $facet),
           '#default_value' => $options['default_value'],
+          '#multiple' => TRUE,
         );
       }
       // Otherwise just show a simple textfield.
@@ -187,7 +188,7 @@ class SolrBean extends BeanPlugin {
   }
 
   /**
-   * Impelements BeanPlugin::submit().
+   * Implements BeanPlugin::submit().
    */
   public function submit(Bean $bean) {
     // Save the field id with each facet, so it doesn't have to be queryed
