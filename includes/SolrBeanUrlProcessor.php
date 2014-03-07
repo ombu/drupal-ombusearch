@@ -76,6 +76,7 @@ class SolrBeanUrlProcessor extends FacetapiUrlProcessorStandard {
 
         if (!empty($data['default_value']) && !in_array($data['field'], $filter_queries)) {
           if (is_array($data['default_value'])) {
+            $data['default_value'] = array_filter($data['default_value']);
             foreach ($data['default_value'] as $value) {
               $conditions['f'][] = $data['field'] . ':' . $value;
             }
