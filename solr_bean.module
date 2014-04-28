@@ -73,6 +73,8 @@ function solr_bean_theme($existing, $type, $theme, $path) {
         'module' => NULL,
         'search_page' => NULL,
         'bean' => NULL,
+        'description' => NULL,
+        'pager' => NULL,
         'search_results' => array(),
       ),
       'template' => 'solr-bean-results',
@@ -83,36 +85,25 @@ function solr_bean_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * Implements hook_solr_bean_view_modes().
- *
- * Exposes default search results and all node view types as view modes for solr
- * beans.
+ * Implements hook_bean_styles().
  */
-function solr_bean_solr_bean_view_modes() {
-  // Default search results that uses theme_search_result() for each result.
-  $view_mode_options['solr'] = t('Search results');
-
-  // Pull in all node view types.
-  $entity_info = entity_get_info('node');
-  foreach ($entity_info['view modes'] as $machine_name => $info) {
-    if ($info['custom settings'] === TRUE) {
-      $view_mode_options[$machine_name] = $info['label'];
-    }
-  }
-
-  return $view_mode_options;
-}
-
-/**
- * Returns all available view modes for solr beans.
- */
-function solr_bean_view_modes() {
-  $view_modes = module_invoke_all('solr_bean_view_modes');
-
-  // Allow other module to alter view modes.
-  drupal_alter('solr_bean_view_modes', $view_modes);
-
-  return $view_modes;
+function solr_bean_bean_styles() {
+  return array(
+    'solr' => array(
+      'label'          => 'Search Results',
+      'class'          => 'SolrBeanStyle',
+      'bean_types'     => array(
+        'solr_bean',
+      ),
+    ),
+    'solr_teaser' => array(
+      'label'          => 'Teaser',
+      'class'          => 'SolrTeaserBeanStyle',
+      'bean_types'     => array(
+        'solr_bean',
+      ),
+    )
+  );
 }
 
 /**
@@ -204,94 +195,7 @@ function theme_solr_bean_facet_settings_table($variables) {
 function template_preprocess_solr_bean_results(&$variables) {
   $bean = $variables['bean'];
 
-  $variables['classes_array'][] = 'solr-bean-' . $bean->results_view_mode;
-  $variables['view_mode'] = $bean->results_view_mode;
-
-  $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . str_replace('-', '_', $bean->results_view_mode);
-
-  // Fetch our current query.
-  $env_id = NULL;
-  if (!empty($variables['search_page']['env_id'])) {
-    $env_id = $variables['search_page']['env_id'];
-  }
-  $query = apachesolr_current_query($env_id);
-
-  if ($query) {
-    $variables['query'] = $query;
-    $variables['response'] = apachesolr_static_response_cache($query->getSearcher());
-  }
-  if (empty($variables['response'])) {
-    $variables['description'] = '';
-    return;
-  }
-  $total = $variables['response']->response->numFound;
-  $params = $variables['query']->getParams();
-
-  $variables['description'] = t('Showing items @start through @end of @total.', array(
-    '@start' => $params['start'] + 1,
-    '@end' => $params['start'] + $params['rows'] - 1,
-    '@total' => $total,
-  ));
-  // Hide pager, if necessary.
-  if ($bean->settings['pager']) {
-    pager_default_initialize($total, $params['rows'], $bean->settings['pager_element']);
-    $variables['pager'] = theme('pager', array('tags' => NULL, 'element' => $bean->settings['pager_element']));
-  }
-  else {
-    $variables['pager'] = '';
-  }
-
-  // Handle the specific results view mode of `solr`.
-  // Other modules providing view modules should set
-  // $variables['search_results'] in their own preprocess functions, otherwise
-  // results will be rendered using node_view in
-  // template_process_solr_bean_results().
-  if ($bean->results_view_mode == 'solr') {
-    foreach ($variables['results'] as $result) {
-      $variables['search_results'][] = array(
-        '#theme' => 'search_result',
-        '#result' => $result,
-        '#module' => $variables['module'],
-      );
-    }
-  }
-}
-
-/**
- * Process variables for solr-bean-results.tpl.php.
- */
-function template_process_solr_bean_results(&$variables) {
-  // Default to rendering results using entity_view.
-  if (empty($variables['search_results'])) {
-    foreach ($variables['results'] as $result) {
-      $entity_type = $result['entity_type'];
-      $entity_id = $result['fields']['entity_id'];
-
-      // Default to teaser if view mode isn't a valid node view.
-      $entity_info = entity_get_info($entity_type);
-      if (!isset($entity_info['view modes'][$variables['bean']->results_view_mode])) {
-        $variables['bean']->results_view_mode = 'teaser';
-      }
-
-      // Render entity appropriately.
-      if ($entity_info) {
-        $entity = entity_load($entity_type, array($entity_id));
-        if ($entity) {
-          $rendered_result = entity_view(
-            $entity_type,
-            $entity,
-            $variables['bean']->results_view_mode
-          );
-          $rendered_result = $rendered_result[$entity_type][$entity_id];
-          $rendered_result['#result'] = $result;
-
-          $variables['search_results'][$entity_id] = $rendered_result;
-        }
-      }
-      else {
-        // todo: if result is not an entity, then render using default solr
-        // result.
-      }
-    }
-  }
+  // $variables['classes_array'][] = 'solr-bean-' . $bean->results_view_mode;
+  // $variables['view_mode'] = $bean->results_view_mode;
+  // $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . str_replace('-', '_', $bean->results_view_mode);
 }

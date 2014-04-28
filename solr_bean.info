@@ -7,3 +7,5 @@ dependencies[] = "facetapi"
 dependencies[] = "bean"
 files[] = includes/SolrBean.php
 files[] = includes/SolrBeanUrlProcessor.php
+files[] = includes/SolrBeanStyle.php
+files[] = includes/SolrTeaserBeanStyle.php
