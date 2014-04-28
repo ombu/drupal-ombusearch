@@ -135,7 +135,6 @@ class SolrBean extends BeanPlugin {
     }
 
     // Sort settings.
-    $sort_fields = $this->getSortFieldOptions();
     $form['sort'] = array(
       '#tree' => TRUE,
       '#type' => 'fieldset',
@@ -199,7 +198,9 @@ class SolrBean extends BeanPlugin {
       if ($key == 'keys') {
         continue;
       }
-      $bean->data['facets'][$key]['field'] = $facets[$key]['field'];
+      if (isset($facets[$key])) {
+        $bean->data['facets'][$key]['field'] = $facets[$key]['field'];
+      }
     }
   }
 
@@ -279,7 +280,10 @@ class SolrBean extends BeanPlugin {
       $params['fq'] = isset($conditions['fq']) ? $conditions['fq'] : array();
 
       // Set the number of rows from the bean.
-      $params['rows'] = isset($this->bean->settings['results_per_page']) ? $this->bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'];
+      $rows = isset($this->bean->settings['results_per_page']) ? $this->bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'];
+      if (!empty($rows)) {
+        $params['rows'] = $rows;
+      }
 
       if (empty($search_page['settings']['apachesolr_search_spellcheck'])) {
         // Spellcheck needs to have a string as false/true
