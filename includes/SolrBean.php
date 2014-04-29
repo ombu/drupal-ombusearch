@@ -641,6 +641,7 @@ class SolrBean extends BeanPlugin {
 
     $searcher = $query->getSearcher();
     $elements = facetapi_build_realm($searcher, 'block');
+    $facet_info = $this->getFacetInfo();
 
     uasort($this->bean->facets, 'drupal_sort_weight');
 
@@ -674,13 +675,18 @@ class SolrBean extends BeanPlugin {
       $build[$delta] = $elements[$key];
       $block->region = NULL;
       $block->delta = 'apachesolr-' . $key;
+
       // @todo: the final themed block's div id attribute does not coincide with "real" block's id (see facetapi_get_delta_map())
       $build[$delta]['#block'] = $block;
       $build[$delta]['#theme_wrappers'][] = 'block';
       $build[$delta]['#weight'] = $facet['weight'];
 
+      // Get global settings for a facet in order to determine display style.
+      // Only show facet as a select box if it's set to have an 'and' operator.
+      $global_settings = $this->getFacetapiAdapter()->getFacet($facet_info[$key])->getSettings();
       $ids[] = array(
         'selector' => '#' . $build[$delta]['#attributes']['id'],
+        'type' => $global_settings->settings['operator'],
         'title' => $build[$delta]['#title'],
       );
     }

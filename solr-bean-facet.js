@@ -4,25 +4,18 @@
 
       attach: function(context) {
 
-        if (Drupal.settings.solrBeanSelectWidget.length) {
+        if (typeof Drupal.settings.solrBeanSelectWidget !== 'undefined') {
 
-          var changeFn = function() {
-            var val = $(this).val();
-            if (val != '') {
-              window.location = $(this).val();
-            }
-          };
           $.each(Drupal.settings.solrBeanSelectWidget, function(index, facet) {
-            if (facet.initialized) {
+            var $el = $(facet.selector, context);
+            if ($el.hasClass('solr-bean-select-processed')) {
               return;
             }
+            $el.addClass('solr-bean-select-processed');
 
-            var $el = $(facet.selector);
             $('.element-invisible', $el).remove();
-            if ($('.facetapi-active', $el).length) {
-              // Active
-              var html = $('.facetapi-active', $el).parent('li').html();
-              $el.replaceWith('<div class="facetapi-active-widget">' + html + '</div>');
+            if ($('.facetapi-active', $el).length || facet.type == 'or') {
+              $('a', $el).bind('click', Drupal.solrBean.filterChangeHandler);
             }
             else {
               // Dropdown
@@ -32,11 +25,9 @@
                 var $a = $(this);
                 $select.append('<option value="' + $a.attr('href') + '">' + $a.text() + '</option>');
               });
-              $select.bind('change', changeFn);
+              $select.bind('change', Drupal.solrBean.filterChangeHandler);
               $el.replaceWith($select);
             }
-
-            facet.initialized = true;
           });
 
         }
@@ -44,5 +35,14 @@
       }
 
     };
+
+    Drupal.solrBean = {};
+
+    Drupal.solrBean.filterChangeHandler = function(e) {
+      var val = $(this).val();
+      if (val != '') {
+        window.location = $(this).val();
+      }
+    }
 
 })(jQuery);

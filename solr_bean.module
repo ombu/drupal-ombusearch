@@ -94,7 +94,6 @@ function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin)
 
   // Add all visible facets.
   $facets = $solr_bean_plugin->buildFacets();
-  dpm($facets);
   if ($facets) {
     $form['f'] = $facets;
   }
