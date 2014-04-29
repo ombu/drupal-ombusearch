@@ -85,6 +85,14 @@ class SolrBean extends BeanPlugin {
       ),
     );
 
+    // Sort facets.
+    foreach ($this->bean->facets as $key => $facet) {
+      if (isset($facets[$key]) && isset($facet['weight'])) {
+        $facets[$key]['weight'] = $facet['weight'];
+      }
+    }
+    uasort($facets, 'drupal_sort_weight');
+
     // Form for facet visibility, default value settings.
     $form['facets'] = array(
       '#theme' => 'solr_bean_facet_settings_table',
@@ -98,6 +106,16 @@ class SolrBean extends BeanPlugin {
         'default_value' => '',
       );
       $form['facets'][$key]['#facet'] = $facet;
+
+      $form['facets'][$key]['weight'] = array(
+        '#type' => 'weight',
+        '#title' => t('Weight'),
+        '#title_display' => 'invisible',
+        '#default_value' => $options['weight'],
+        '#attributes' => array(
+          'class' => array('facetapi-order-weight'),
+        ),
+      );
 
       $form['facets'][$key]['visible'] = array(
         '#type' => 'checkbox',
@@ -624,9 +642,24 @@ class SolrBean extends BeanPlugin {
     $searcher = $query->getSearcher();
     $elements = facetapi_build_realm($searcher, 'block');
 
+    uasort($this->bean->facets, 'drupal_sort_weight');
+
     $build = array();
     $ids = array();
     foreach ($this->bean->facets as $key => $facet) {
+      // Handle special case of search keys.
+      if ($facet['visible'] && $key == 'keys') {
+        $build['keys'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Enter terms'),
+          '#default_value' => isset($_GET['keys']) ? $_GET['keys'] : $facet['default_value'],
+          '#size' => 20,
+          '#maxlength' => 255,
+          '#weight' => $facet['weight'],
+        );
+        continue;
+      }
+
       if (!$facet['visible'] || !isset($elements[$key])) {
         continue;
       }
@@ -644,7 +677,7 @@ class SolrBean extends BeanPlugin {
       // @todo: the final themed block's div id attribute does not coincide with "real" block's id (see facetapi_get_delta_map())
       $build[$delta]['#block'] = $block;
       $build[$delta]['#theme_wrappers'][] = 'block';
-      $build['#sorted'] = TRUE;
+      $build[$delta]['#weight'] = $facet['weight'];
 
       $ids[] = array(
         'selector' => '#' . $build[$delta]['#attributes']['id'],

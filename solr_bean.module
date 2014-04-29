@@ -94,22 +94,12 @@ function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin)
 
   // Add all visible facets.
   $facets = $solr_bean_plugin->buildFacets();
+  dpm($facets);
   if ($facets) {
     $form['f'] = $facets;
   }
 
-  // Add a custom search form if required.
-  if ($solr_bean_plugin->bean->facets['keys']['visible']) {
-    $form['keys'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter terms'),
-      '#default_value' => isset($_GET['keys']) ? $_GET['keys'] : $solr_bean_plugin->bean->facets['keys']['default_value'],
-      '#size' => 20,
-      '#maxlength' => 255,
-    );
-  }
-
-  if (isset($form['keys']) || isset($form['f'])) {
+  if (isset($form['f'])) {
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Search'),
@@ -142,6 +132,7 @@ function theme_solr_bean_facet_settings_table($variables) {
   $header = array(
     'label' => array('data' => t('Facet')),
     'visible' => array('data' => t('Visible')),
+    'weight' => array('data' => t('Weight')),
     'default_value' => array('data' => t('Default value')),
   );
 
@@ -152,8 +143,10 @@ function theme_solr_bean_facet_settings_table($variables) {
       'data' => array(
         check_plain($facet['label']) . "<div class='description'>" . filter_xss($facet['description']) . '</div>',
         drupal_render($form[$child]['visible']),
+        drupal_render($form[$child]['weight']),
         drupal_render($form[$child]['default_value']),
       ),
+      'class' => array('draggable'),
     );
   }
 
@@ -163,6 +156,8 @@ function theme_solr_bean_facet_settings_table($variables) {
     'rows' => $rows,
     'attributes' => array('id' => 'facetapi-realm-settings'),
   ));
+
+  drupal_add_tabledrag('facetapi-realm-settings', 'order', 'sibling', 'facetapi-order-weight');
 
   return $output;
 }
