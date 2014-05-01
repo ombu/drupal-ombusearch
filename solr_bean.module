@@ -6,6 +6,25 @@
  */
 
 /**
+ * Implements hook_menu().
+ */
+function solr_bean_menu() {
+  $items = array();
+
+  // AJAX callback for solr beans.
+  $items['solr_bean/%bean_delta'] = array(
+    'title' => 'Search Block',
+    'page callback' => 'solr_bean_ajax',
+    'page arguments' => array(1),
+    'access callback' => 'bean_access',
+    'access arguments' => array('view', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
  * Implements hook_bean_types_api_info().
  */
 function solr_bean_bean_types_api_info() {
@@ -88,8 +107,8 @@ function solr_bean_theme($existing, $type, $theme, $path) {
  * Form for solr bean filters.
  */
 function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin) {
-  $form['#id'] = 'search-form';
-  $form['#attributes']['class'][] = 'search-form';
+  $form['#id'] = drupal_clean_css_identifier('solr-bean-search-form');
+  $form['#attributes']['class'][] = 'solr-bean-search-form';
   $form['#bean'] = $solr_bean_plugin->bean;
 
   // Add all visible facets.
@@ -170,4 +189,14 @@ function template_preprocess_solr_bean_results(&$variables) {
   // $variables['classes_array'][] = 'solr-bean-' . $bean->results_view_mode;
   // $variables['view_mode'] = $bean->results_view_mode;
   // $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . str_replace('-', '_', $bean->results_view_mode);
+}
+
+/**
+ * Returns formatted JSON results for solr bean AJAX filtering.
+ */
+function solr_bean_ajax($bean) {
+  $build = $bean->view();
+
+  print drupal_render($build);
+  drupal_exit();
 }

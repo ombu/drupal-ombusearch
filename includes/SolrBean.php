@@ -200,6 +200,11 @@ class SolrBean extends BeanPlugin {
       '#default_value' => isset($bean->settings['results_per_page']) ? $bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'],
       '#element_validate' => array('element_validate_number'),
     );
+    $form['settings']['expose_results_per_page'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Show results per page selector?'),
+      '#default_value' => isset($bean->settings['expose_results_per_page']) ? $bean->settings['expose_results_per_page'] : 0,
+    );
 
     return $form;
   }
@@ -273,6 +278,52 @@ class SolrBean extends BeanPlugin {
 
     $content['bean'][$bean->delta]['search'] = $build_results;
 
+    // Add results per page selector.
+    // @todo: allow options to be configurable.
+    if ($this->bean->settings['expose_results_per_page']) {
+      $content['bean'][$bean->delta]['results_per_page'] = array(
+        '#name' => 'results_per_page',
+        '#type' => 'select',
+        '#title' => t('Results per page'),
+        '#options' => array(
+          10 => 10,
+          20 => 20,
+          50 => 50,
+          100 => 100,
+        ),
+        '#attributes' => array(
+          'class' => array('results-per-page'),
+        ),
+        '#value' => isset($_GET['results_per_page']) ? $_GET['results_per_page'] : $this->bean->settings['results_per_page'],
+      );
+    }
+
+    // Add pager.
+    if ($this->bean->settings['pager']) {
+      $query = apachesolr_current_query($search_page['env_id']);
+      $response = apachesolr_static_response_cache($query->getSearcher());
+
+      $total = $response->response->numFound;
+      $params = $query->getParams();
+
+      // @todo: make search text alterable.
+      $rows = min(count($results), $params['rows']);
+      $content['bean'][$bean->delta]['pager'] = array(
+        'description' => array(
+          '#markup' => t('Showing items @start through @end of @total.', array(
+            '@start' => $query->page * $params['rows'] + 1,
+            '@end' => $query->page * $params['rows'] + $rows,
+            '@total' => $total,
+          )),
+        ),
+        'pager' => array(
+          '#theme' => 'pager',
+          '#tags' => NULL,
+          '#element' => $bean->settings['pager_element'],
+        ),
+      );
+    }
+
     // Allow bean styles to alter build.
     if (module_exists('bean_style')) {
       bean_style_view_alter($content, $bean);
@@ -298,7 +349,7 @@ class SolrBean extends BeanPlugin {
       $params['fq'] = isset($conditions['fq']) ? $conditions['fq'] : array();
 
       // Set the number of rows from the bean.
-      $rows = isset($this->bean->settings['results_per_page']) ? $this->bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'];
+      $rows = isset($_GET['results_per_page']) ? $_GET['results_per_page'] : $this->bean->settings['results_per_page'];
       if (!empty($rows)) {
         $params['rows'] = $rows;
       }
@@ -693,7 +744,8 @@ class SolrBean extends BeanPlugin {
 
     // Add select widget js.
     if ($ids) {
-      $build['#attached']['js'][] = drupal_get_path('module', 'solr_bean') . '/solr-bean-facet.js';
+      $build['#attached']['js'][] = drupal_get_path('module', 'solr_bean') . '/js/solr-bean-facet.js';
+      $build['#attached']['library'][] = array('system', 'jquery.bbq');
       $build['#attached']['js'][] = array(
         'data' => array('solrBeanSelectWidget' => $ids),
         'type' => 'setting',
