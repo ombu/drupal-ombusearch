@@ -44,6 +44,24 @@
 
     };
 
+    Drupal.behaviors.solrBeanState = {
+      attach: function(context) {
+
+        if ($('body').hasClass('solr-bean-statechange')) {
+          return;
+        }
+        else {
+          $('body').addClass('solr-bean-statechange');
+        }
+        $(window).bind('statechange', function() {
+          var data = jQuery.deparam.querystring(window.location.search);
+          $('.solr-bean').each(function(i, beanNode) {
+            Drupal.solrBean.ajaxCall(data, $(beanNode));
+          });
+        });
+      }
+    };
+
     Drupal.solrBean = {};
 
     Drupal.solrBean.resultsChangeHandler = function(e) {
@@ -56,11 +74,11 @@
       // Check if facets are on the page, otherwise create an empty data object.
       var data = {};
       if ($('.solr-block-search-form', bean).length > 0) {
-        data = deparam.querystring($('.solr-block-search-form', bean).action);
+        data = $.deparam.querystring($('.solr-block-search-form', bean).action);
       }
 
       data.results_per_page = $(this).val();
-      Drupal.solrBean.ajaxCall(data, this);
+      Drupal.solrBean.updateState(data, this);
     }
 
     Drupal.solrBean.paginationHandler = function(e) {
@@ -69,7 +87,7 @@
       }
 
       var data = $.deparam.querystring(this.search);
-      Drupal.solrBean.ajaxCall(data, this);
+      Drupal.solrBean.updateState(data, this);
     }
 
     Drupal.solrBean.filterChangeHandler = function(e) {
@@ -78,7 +96,7 @@
       }
 
       var data = $.deparam.querystring(this.search);
-      Drupal.solrBean.ajaxCall(data, this);
+      Drupal.solrBean.updateState(data, this);
     }
 
     Drupal.solrBean.keysSubmitHandler = function(e) {
@@ -87,18 +105,22 @@
       }
 
       var data = $.deparam.querystring(this.action);
-      Drupal.solrBean.ajaxCall(data, this);
+      Drupal.solrBean.updateState(data, this);
     };
 
-    Drupal.solrBean.ajaxCall = function(data, context) {
-
+    Drupal.solrBean.updateState = function(data, context) {
       var bean = $(context).closest('[data-module="bean"][data-delta]');
-      bean.addClass('ajax-processing');
 
       data.keys = $('input[name="keys"]', bean).val();
       if (!data.results_per_page) {
         data.results_per_page = $('select[name="results_per_page"]', bean).val();
       }
+
+      History.pushState(data, '', window.location.pathname + '?' + $.param(data));
+    };
+
+    Drupal.solrBean.ajaxCall = function(data, bean) {
+      bean.addClass('ajax-processing');
 
       jQuery.ajax(Drupal.settings.basePath + 'solr_bean/' + bean.attr('data-delta'), {
         data: data,
