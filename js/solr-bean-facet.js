@@ -54,7 +54,7 @@
           $('body').addClass('solr-bean-statechange');
         }
         $(window).bind('statechange', function() {
-          var data = jQuery.deparam.querystring(window.location.search);
+          var data = jQuery.deparam.querystring();
           $('.solr-bean').each(function(i, beanNode) {
             Drupal.solrBean.ajaxCall(data, $(beanNode));
           });
@@ -64,17 +64,21 @@
 
     Drupal.solrBean = {};
 
+    Drupal.solrBean.closestBean = function(el) {
+      return $(el).closest('[data-module="bean"][data-delta]');
+    }
+
     Drupal.solrBean.resultsChangeHandler = function(e) {
       if (e) {
         e.preventDefault();
       }
 
-      var bean = $(this).closest('[data-module="bean"][data-delta]');
+      var bean = Drupal.solrBean.closestBean(this);;
 
       // Check if facets are on the page, otherwise create an empty data object.
       var data = {};
       if ($('.solr-block-search-form', bean).length > 0) {
-        data = $.deparam.querystring($('.solr-block-search-form', bean).action);
+        data = $.deparam.querystring();
       }
 
       data.results_per_page = $(this).val();
@@ -95,7 +99,13 @@
         e.preventDefault();
       }
 
-      var data = $.deparam.querystring(this.search);
+      // This is either a link or a select node.
+      if (this.search) {
+        var data = $.deparam.querystring(this.search);
+      }
+      else {
+        var data = $.deparam.querystring($(this).val());
+      }
       Drupal.solrBean.updateState(data, this);
     }
 
@@ -104,14 +114,16 @@
         e.preventDefault();
       }
 
-      var data = $.deparam.querystring(this.action);
+      var data = $.deparam.querystring();
+      var bean = Drupal.solrBean.closestBean(this);;
+      data.keys = $('input[name="keys"]', bean).val().trim();
+
       Drupal.solrBean.updateState(data, this);
     };
 
     Drupal.solrBean.updateState = function(data, context) {
-      var bean = $(context).closest('[data-module="bean"][data-delta]');
+      var bean = Drupal.solrBean.closestBean(context);
 
-      data.keys = $('input[name="keys"]', bean).val();
       if (!data.results_per_page) {
         data.results_per_page = $('select[name="results_per_page"]', bean).val();
       }
