@@ -744,8 +744,10 @@ class SolrBean extends BeanPlugin {
 
     // Add select widget js.
     if ($ids) {
-      $build['#attached']['js'][] = drupal_get_path('module', 'solr_bean') . '/js/solr-bean-facet.js';
-      $build['#attached']['js'][] = drupal_get_path('module', 'solr_bean') . '/js/jquery.history.js';
+      $solr_bean_path = drupal_get_path('module', 'solr_bean');
+      $build['#attached']['css'][] = $solr_bean_path . '/css/solr-bean.css';
+      $build['#attached']['js'][] = $solr_bean_path . '/js/solr-bean-facet.js';
+      $build['#attached']['js'][] = $solr_bean_path . '/js/jquery.history.js';
       $build['#attached']['library'][] = array('system', 'jquery.bbq');
       $build['#attached']['js'][] = array(
         'data' => array('solrBeanSelectWidget' => $ids),
