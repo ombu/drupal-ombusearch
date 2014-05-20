@@ -53,7 +53,7 @@
         else {
           $('body').addClass('solr-bean-statechange');
         }
-        $(window).bind('statechange', function() {
+        $(window).bind('popstate', function() {
           var data = jQuery.deparam.querystring();
           $('.solr-bean').each(function(i, beanNode) {
             Drupal.solrBean.ajaxCall(data, $(beanNode));
@@ -128,7 +128,14 @@
         data.results_per_page = $('select[name="results_per_page"]', bean).val();
       }
 
-      History.pushState(data, '', window.location.pathname + '?' + $.param(data));
+      var path = window.location.pathname + '?' + $.param(data);
+      if (window.history && window.history.pushState) {
+        history.pushState({}, '', path);
+        Drupal.solrBean.ajaxCall(data, bean);
+      }
+      else {
+        window.location = path;
+      }
     };
 
     Drupal.solrBean.ajaxCall = function(data, bean) {
