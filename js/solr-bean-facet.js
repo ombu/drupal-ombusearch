@@ -53,16 +53,22 @@
         else {
           $('body').addClass('solr-bean-statechange');
         }
-        $(window).bind('popstate', function() {
-          var data = jQuery.deparam.querystring();
-          $('.solr-bean').each(function(i, beanNode) {
-            Drupal.solrBean.ajaxCall(data, $(beanNode));
-          });
+        $(window).bind('popstate', function(e) {
+          var querystring = window.location.search;
+          if (querystring !== Drupal.solrBean.currentQueryString) {
+            Drupal.solrBean.currentQueryString= querystring;
+            var data = jQuery.deparam.querystring();
+            $('.solr-bean').each(function(i, beanNode) {
+              Drupal.solrBean.ajaxCall(data, $(beanNode));
+            });
+          }
         });
       }
     };
 
     Drupal.solrBean = {};
+
+    Drupal.solrBean.currentQueryString = window.location.search || '';
 
     Drupal.solrBean.closestBean = function(el) {
       return $(el).closest('[data-module="bean"][data-delta]');
@@ -132,6 +138,7 @@
       if (window.history && window.history.pushState) {
         history.pushState({}, '', path);
         Drupal.solrBean.ajaxCall(data, bean);
+        Drupal.solrBean.currentQueryString = window.location.search || '';
       }
       else {
         window.location = path;
