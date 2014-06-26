@@ -27,7 +27,6 @@ class SolrBean extends BeanPlugin {
       'settings' => array(
         'pager' => 1,
       ),
-      'results_view_mode' => 'solr',
       'sort' => array(
         'field' => 'score',
         'order' => 'desc',
@@ -44,15 +43,6 @@ class SolrBean extends BeanPlugin {
 
     // Set the bean for later use.
     $this->setBean($bean);
-
-    // Let the user choose which view mode the results should be displayed as.
-    $form['results_view_mode'] = array(
-      '#title' => t('Results View Mode'),
-      '#type' => 'select',
-      '#options' => solr_bean_view_modes(),
-      '#description' => 'Select how you would like the node results to be displayed',
-      '#default_value' => $bean->results_view_mode,
-    );
 
     // @todo: make search page configurable, and show facets dynamically based
     // on which search page is selected.  For now, just default to core_search.
@@ -130,6 +120,7 @@ class SolrBean extends BeanPlugin {
           '#title_display' => 'invisible',
           '#options' => array('' => '- None -') + call_user_func($facet['values callback'], $facet),
           '#default_value' => $options['default_value'],
+          '#multiple' => TRUE,
         );
       }
       // Otherwise just show a simple textfield.
@@ -144,7 +135,6 @@ class SolrBean extends BeanPlugin {
     }
 
     // Sort settings.
-    $sort_fields = $this->getSortFieldOptions();
     $form['sort'] = array(
       '#tree' => TRUE,
       '#type' => 'fieldset',
@@ -197,7 +187,7 @@ class SolrBean extends BeanPlugin {
   }
 
   /**
-   * Impelements BeanPlugin::submit().
+   * Implements BeanPlugin::submit().
    */
   public function submit(Bean $bean) {
     // Save the field id with each facet, so it doesn't have to be queryed
@@ -208,7 +198,9 @@ class SolrBean extends BeanPlugin {
       if ($key == 'keys') {
         continue;
       }
-      $bean->data['facets'][$key]['field'] = $facets[$key]['field'];
+      if (isset($facets[$key])) {
+        $bean->data['facets'][$key]['field'] = $facets[$key]['field'];
+      }
     }
   }
 
@@ -249,13 +241,10 @@ class SolrBean extends BeanPlugin {
     apachesolr_suppress_blocks($search_page['env_id'], TRUE);
 
     // Build our page and allow modification.
+    $search_page['solr_bean'] = TRUE;
     $build_results = apachesolr_search_search_page_custom($results, $search_page, $build);
 
     apachesolr_suppress_blocks($search_page['env_id'], $old_suppress);
-
-    // Render result in our custom theme, to allow for different display modes.
-    $build_results['search_results']['#theme'] = 'solr_bean_results';
-    $build_results['search_results']['#bean'] = $bean;
 
     // Adds the search form to the page.
     $search_form = drupal_get_form('solr_bean_search_form', $this);
@@ -264,7 +253,12 @@ class SolrBean extends BeanPlugin {
       $build_results['search_form'] = $search_form;
     }
 
-    $content['bean'][$bean->bid]['search'] = $build_results;
+    $content['bean'][$bean->delta]['search'] = $build_results;
+
+    // Allow bean styles to alter build.
+    if (module_exists('bean_style')) {
+      bean_style_view_alter($content, $bean);
+    }
 
     return $content;
   }
@@ -286,7 +280,10 @@ class SolrBean extends BeanPlugin {
       $params['fq'] = isset($conditions['fq']) ? $conditions['fq'] : array();
 
       // Set the number of rows from the bean.
-      $params['rows'] = isset($this->bean->settings['results_per_page']) ? $this->bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'];
+      $rows = isset($this->bean->settings['results_per_page']) ? $this->bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'];
+      if (!empty($rows)) {
+        $params['rows'] = $rows;
+      }
 
       if (empty($search_page['settings']['apachesolr_search_spellcheck'])) {
         // Spellcheck needs to have a string as false/true
@@ -599,8 +596,15 @@ class SolrBean extends BeanPlugin {
    */
   protected function getFacetInfo() {
     $adapter = $this->getFacetapiAdapter();
-    $adapter->processFacets();
-    return $adapter->getEnabledFacets();
+    if ($adapter) {
+      $adapter->processFacets();
+      $facets = $adapter->getEnabledFacets();
+
+      // Allow other modules to limit the displayed facets for a solr block.
+      drupal_alter('solr_bean_facets', $facets);
+
+      return $facets;
+    }
   }
 
   /**
@@ -611,7 +615,13 @@ class SolrBean extends BeanPlugin {
 
     // Get facet render elements.
     module_load_include('inc', 'facetapi', 'facetapi.block');
-    $searcher = apachesolr_current_query($search_page['env_id'])->getSearcher();
+    $query = apachesolr_current_query($search_page['env_id']);
+
+    if (!$query) {
+      return '';
+    }
+
+    $searcher = $query->getSearcher();
     $elements = facetapi_build_realm($searcher, 'block');
 
     $build = array();
@@ -660,6 +670,9 @@ class SolrBean extends BeanPlugin {
   protected function getSortFieldOptions() {
     // Get a stub apachesolr query.
     $query = apachesolr_drupal_query('solr_bean');
+
+    // Mark this query as being used by SolrBean.
+    $query->isSolrBean = TRUE;
 
     // Allow other modules to add their own sorts.
     foreach (module_implements('apachesolr_query_prepare') as $module) {
