@@ -115,6 +115,22 @@ function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin)
   $facets = $solr_bean_plugin->buildFacets();
   if ($facets) {
     $form['f'] = $facets;
+
+    // Add clear link if there are active facets.
+    if (!empty($_GET['f'])) {
+      $form['f']['clear'] = array(
+        '#weight' => -10,
+        '#theme' => 'link',
+        '#text' => t('✖ Clear all filters'),
+        '#path' => isset($_GET['base_path']) ? trim($_GET['base_path'], '/') : current_path(),
+        '#options' => array(
+          'html' => FALSE,
+          'attributes' => array(
+            'class' => array('clear-link'),
+          ),
+        ),
+      );
+    }
   }
 
   if (isset($form['f'])) {

@@ -148,6 +148,8 @@
     Drupal.solrBean.ajaxCall = function(data, bean) {
       bean.addClass('ajax-processing');
 
+      data.base_path = window.location.pathname;
+
       jQuery.ajax(Drupal.settings.basePath + 'solr_bean/' + bean.attr('data-delta'), {
         data: data,
         dataType: 'html',
