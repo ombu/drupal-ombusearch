@@ -83,7 +83,7 @@
 
       // Check if facets are on the page, otherwise create an empty data object.
       var data = {};
-      if ($('.solr-block-search-form', bean).length > 0) {
+      if ($('.solr-bean-search-form', bean).length > 0) {
         data = $.deparam.querystring();
       }
 
