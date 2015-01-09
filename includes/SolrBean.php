@@ -276,6 +276,20 @@ class SolrBean extends BeanPlugin {
       $build_results['search_form'] = $search_form;
     }
 
+    // Fix suggestions link.
+    if (!empty($build_results['suggestions'])) {
+      $suggestions = apachesolr_search_get_search_suggestions($search_page['env_id']);
+      $current_path = isset($_GET['base_path']) ? trim($_GET['base_path'], '/') : current_path();
+      $build_results['suggestions'] = array(
+        '#theme' => 'apachesolr_search_suggestions',
+        '#links' => array(l($suggestions[0], $current_path, array(
+          'query' => array(
+            'keys' => $suggestions[0],
+          ),
+        ))),
+      );
+    }
+
     $content['bean'][$bean->delta]['search'] = $build_results;
 
     // Add results per page selector.
