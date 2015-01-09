@@ -117,7 +117,7 @@ function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin)
     $form['f'] = $facets;
 
     // Add clear link if there are active facets.
-    if (!empty($_GET['f'])) {
+    if (!empty($_GET['f']) || !empty($_GET['keys'])) {
       $form['f']['clear'] = array(
         '#weight' => -10,
         '#theme' => 'link',
