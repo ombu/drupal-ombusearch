@@ -1,5 +1,5 @@
-name = "Solr Bean"
-description = "Provides solr page listing in bean form"
+name = OMBU Search
+description = Base search module for OMBU sites, including SolrBean
 core = "7.x"
 dependencies[] = "apachesolr"
 dependencies[] = "apachesolr_search"

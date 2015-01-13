@@ -71,7 +71,7 @@ class SolrBean extends BeanPlugin {
     }
 
     // Get search facets for the given search page.
-    module_load_include('inc', 'solr_bean', 'solr_bean.callbacks');
+    module_load_include('inc', 'ombusearch', 'ombusearch.callbacks');
     $facets = $this->getFacetInfo();
 
     // Add search field as an additional "facet", even though it's just a search
@@ -270,7 +270,7 @@ class SolrBean extends BeanPlugin {
     apachesolr_suppress_blocks($search_page['env_id'], $old_suppress);
 
     // Adds the search form to the page.
-    $search_form = drupal_get_form('solr_bean_search_form', $this);
+    $search_form = drupal_get_form('ombusearch_solr_bean_search_form', $this);
     if (isset($search_form['f']) || isset($search_form['keys'])) {
       $search_form['#weight'] = -10;
       $build_results['search_form'] = $search_form;
@@ -759,7 +759,7 @@ class SolrBean extends BeanPlugin {
 
     // Add select widget js.
     if ($ids) {
-      $solr_bean_path = drupal_get_path('module', 'solr_bean');
+      $solr_bean_path = drupal_get_path('module', 'ombusearch');
       $build['#attached']['css'][] = $solr_bean_path . '/css/solr-bean.css';
       $build['#attached']['js'][] = $solr_bean_path . '/js/solr-bean-facet.js';
       $build['#attached']['library'][] = array('system', 'jquery.bbq');
