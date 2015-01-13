@@ -55,6 +55,21 @@ function ombusearch_bean_types() {
 }
 
 /**
+ * Implements hook_facetapi_widgets().
+ */
+function ombusearch_facetapi_widgets() {
+  return array(
+    'ombusearch_dropdowns' => array(
+      'handler' => array(
+        'label' => t('Select Field (Dropdowns)'),
+        'class' => 'OmbusearchFacetapiSelectDropdowns',
+        'query types' => array('term', 'date'),
+      ),
+    ),
+  );
+}
+
+/**
  * Implements hook_facetapi_url_processors().
  */
 function ombusearch_facetapi_url_processors() {

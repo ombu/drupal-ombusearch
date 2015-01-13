@@ -7,3 +7,4 @@ dependencies[] = "facetapi"
 dependencies[] = "bean"
 files[] = includes/SolrBean.php
 files[] = includes/SolrBeanUrlProcessor.php
+files[] = includes/OmbucleanupFacetapiSelectDropdowns.php
