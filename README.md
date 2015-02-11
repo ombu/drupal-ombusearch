@@ -1,3 +1,8 @@
+OMBU Search
+-----------
+
+Apache Solr search integration into OMBU optimized sites.
+
 Solr Bean
 =========
 
