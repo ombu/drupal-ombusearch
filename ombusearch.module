@@ -6,9 +6,28 @@
  */
 
 /**
+ * Implements hook_menu().
+ */
+function ombusearch_menu() {
+  $items = array();
+
+  // AJAX callback for solr beans.
+  $items['solr_bean/%bean_delta'] = array(
+    'title' => 'Search Block',
+    'page callback' => 'solr_bean_ajax',
+    'page arguments' => array(1),
+    'access callback' => 'bean_access',
+    'access arguments' => array('view', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
  * Implements hook_bean_types_api_info().
  */
-function solr_bean_bean_types_api_info() {
+function ombusearch_bean_types_api_info() {
   return array(
     'api' => bean_current_version(),
   );
@@ -17,9 +36,9 @@ function solr_bean_bean_types_api_info() {
 /**
  * Implements hook_bean_types().
  */
-function solr_bean_bean_types() {
+function ombusearch_bean_types() {
   $plugins = array();
-  $plugin_path = drupal_get_path('module', 'solr_bean');
+  $plugin_path = drupal_get_path('module', 'ombusearch');
 
   $plugins['solr_bean'] = array(
     'label' => t('Search Block'),
@@ -36,11 +55,26 @@ function solr_bean_bean_types() {
 }
 
 /**
+ * Implements hook_facetapi_widgets().
+ */
+function ombusearch_facetapi_widgets() {
+  return array(
+    'ombusearch_dropdowns' => array(
+      'handler' => array(
+        'label' => t('Select Field (Dropdowns)'),
+        'class' => 'OmbusearchFacetapiSelectDropdowns',
+        'query types' => array('term', 'date'),
+      ),
+    ),
+  );
+}
+
+/**
  * Implements hook_facetapi_url_processors().
  */
-function solr_bean_facetapi_url_processors() {
+function ombusearch_facetapi_url_processors() {
   return array(
-    'solr_bean_url_processor' => array(
+    'ombusearch_url_processor' => array(
       'handler' => array(
         'label' => t('Helper URL processor for solr beans.'),
         'class' => 'SolrBeanUrlProcessor',
@@ -52,17 +86,17 @@ function solr_bean_facetapi_url_processors() {
 /**
  * Implements hook_facetapi_search_info_alter().
  */
-function solr_bean_facetapi_searcher_info_alter(array &$searcher_info) {
+function ombusearch_facetapi_searcher_info_alter(array &$searcher_info) {
   foreach ($searcher_info as &$info) {
     // Use solr bean wrapper for url processing.
-    $info['url processor'] = 'solr_bean_url_processor';
+    $info['url processor'] = 'ombusearch_url_processor';
   }
 }
 
 /**
  * Implements hook_theme().
  */
-function solr_bean_theme($existing, $type, $theme, $path) {
+function ombusearch_theme($existing, $type, $theme, $path) {
   $themes = array(
     'solr_bean_facet_settings_table' => array(
       'render element' => 'form',
@@ -87,29 +121,34 @@ function solr_bean_theme($existing, $type, $theme, $path) {
 /**
  * Form for solr bean filters.
  */
-function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin) {
-  $form['#id'] = 'search-form';
-  $form['#attributes']['class'][] = 'search-form';
+function ombusearch_solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin) {
+  $form['#id'] = drupal_clean_css_identifier('solr-bean-search-form');
+  $form['#attributes']['class'][] = 'solr-bean-search-form';
   $form['#bean'] = $solr_bean_plugin->bean;
 
   // Add all visible facets.
   $facets = $solr_bean_plugin->buildFacets();
   if ($facets) {
     $form['f'] = $facets;
+
+    // Add clear link if there are active facets.
+    if (!empty($_GET['f']) || !empty($_GET['keys'])) {
+      $form['f']['clear'] = array(
+        '#weight' => -10,
+        '#theme' => 'link',
+        '#text' => t('✖ Clear all filters'),
+        '#path' => isset($_GET['base_path']) ? trim($_GET['base_path'], '/') : current_path(),
+        '#options' => array(
+          'html' => FALSE,
+          'attributes' => array(
+            'class' => array('clear-link'),
+          ),
+        ),
+      );
+    }
   }
 
-  // Add a custom search form if required.
-  if ($solr_bean_plugin->bean->facets['keys']['visible']) {
-    $form['keys'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter terms'),
-      '#default_value' => isset($_GET['keys']) ? $_GET['keys'] : $solr_bean_plugin->bean->facets['keys']['default_value'],
-      '#size' => 20,
-      '#maxlength' => 255,
-    );
-  }
-
-  if (isset($form['keys']) || isset($form['f'])) {
+  if (isset($form['f'])) {
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Search'),
@@ -123,7 +162,7 @@ function solr_bean_search_form($form, $form_state, BeanPlugin $solr_bean_plugin)
 /**
  * Submit handler for solr bean filtering.
  */
-function solr_bean_search_form_submit($form, &$form_state) {
+function ombusearch_solr_bean_search_form_submit($form, &$form_state) {
   $query = array();
   if ($form_state['values']['keys']) {
     $query['keys'] = $form_state['values']['keys'];
@@ -142,6 +181,7 @@ function theme_solr_bean_facet_settings_table($variables) {
   $header = array(
     'label' => array('data' => t('Facet')),
     'visible' => array('data' => t('Visible')),
+    'weight' => array('data' => t('Weight')),
     'default_value' => array('data' => t('Default value')),
   );
 
@@ -152,8 +192,10 @@ function theme_solr_bean_facet_settings_table($variables) {
       'data' => array(
         check_plain($facet['label']) . "<div class='description'>" . filter_xss($facet['description']) . '</div>',
         drupal_render($form[$child]['visible']),
+        drupal_render($form[$child]['weight']),
         drupal_render($form[$child]['default_value']),
       ),
+      'class' => array('draggable'),
     );
   }
 
@@ -163,6 +205,8 @@ function theme_solr_bean_facet_settings_table($variables) {
     'rows' => $rows,
     'attributes' => array('id' => 'facetapi-realm-settings'),
   ));
+
+  drupal_add_tabledrag('facetapi-realm-settings', 'order', 'sibling', 'facetapi-order-weight');
 
   return $output;
 }
@@ -176,4 +220,14 @@ function template_preprocess_solr_bean_results(&$variables) {
   // $variables['classes_array'][] = 'solr-bean-' . $bean->results_view_mode;
   // $variables['view_mode'] = $bean->results_view_mode;
   // $variables['theme_hook_suggestions'][] = 'solr_bean_results__' . str_replace('-', '_', $bean->results_view_mode);
+}
+
+/**
+ * Returns formatted JSON results for solr bean AJAX filtering.
+ */
+function solr_bean_ajax($bean) {
+  $build = $bean->view();
+
+  print drupal_render($build);
+  drupal_exit();
 }

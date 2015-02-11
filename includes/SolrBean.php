@@ -71,7 +71,7 @@ class SolrBean extends BeanPlugin {
     }
 
     // Get search facets for the given search page.
-    module_load_include('inc', 'solr_bean', 'solr_bean.callbacks');
+    module_load_include('inc', 'ombusearch', 'ombusearch.callbacks');
     $facets = $this->getFacetInfo();
 
     // Add search field as an additional "facet", even though it's just a search
@@ -84,6 +84,14 @@ class SolrBean extends BeanPlugin {
         'values callback' => '',
       ),
     );
+
+    // Sort facets.
+    foreach ($this->bean->facets as $key => $facet) {
+      if (isset($facets[$key]) && isset($facet['weight'])) {
+        $facets[$key]['weight'] = $facet['weight'];
+      }
+    }
+    uasort($facets, 'drupal_sort_weight');
 
     // Form for facet visibility, default value settings.
     $form['facets'] = array(
@@ -98,6 +106,16 @@ class SolrBean extends BeanPlugin {
         'default_value' => '',
       );
       $form['facets'][$key]['#facet'] = $facet;
+
+      $form['facets'][$key]['weight'] = array(
+        '#type' => 'weight',
+        '#title' => t('Weight'),
+        '#title_display' => 'invisible',
+        '#default_value' => $options['weight'],
+        '#attributes' => array(
+          'class' => array('facetapi-order-weight'),
+        ),
+      );
 
       $form['facets'][$key]['visible'] = array(
         '#type' => 'checkbox',
@@ -182,6 +200,11 @@ class SolrBean extends BeanPlugin {
       '#default_value' => isset($bean->settings['results_per_page']) ? $bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'],
       '#element_validate' => array('element_validate_number'),
     );
+    $form['settings']['expose_results_per_page'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Show results per page selector?'),
+      '#default_value' => isset($bean->settings['expose_results_per_page']) ? $bean->settings['expose_results_per_page'] : 0,
+    );
 
     return $form;
   }
@@ -247,13 +270,74 @@ class SolrBean extends BeanPlugin {
     apachesolr_suppress_blocks($search_page['env_id'], $old_suppress);
 
     // Adds the search form to the page.
-    $search_form = drupal_get_form('solr_bean_search_form', $this);
+    $search_form = drupal_get_form('ombusearch_solr_bean_search_form', $this);
     if (isset($search_form['f']) || isset($search_form['keys'])) {
       $search_form['#weight'] = -10;
       $build_results['search_form'] = $search_form;
     }
 
+    // Fix suggestions link.
+    if (!empty($build_results['suggestions'])) {
+      $suggestions = apachesolr_search_get_search_suggestions($search_page['env_id']);
+      $current_path = isset($_GET['base_path']) ? trim($_GET['base_path'], '/') : current_path();
+      $build_results['suggestions'] = array(
+        '#theme' => 'apachesolr_search_suggestions',
+        '#links' => array(l($suggestions[0], $current_path, array(
+          'query' => array(
+            'keys' => $suggestions[0],
+          ),
+        ))),
+      );
+    }
+
     $content['bean'][$bean->delta]['search'] = $build_results;
+
+    // Add results per page selector.
+    // @todo: allow options to be configurable.
+    if ($this->bean->settings['expose_results_per_page']) {
+      $content['bean'][$bean->delta]['results_per_page'] = array(
+        '#name' => 'results_per_page',
+        '#type' => 'select',
+        '#title' => t('Results per page'),
+        '#options' => array(
+          10 => 10,
+          20 => 20,
+          50 => 50,
+          100 => 100,
+        ),
+        '#attributes' => array(
+          'class' => array('results-per-page'),
+        ),
+        '#value' => isset($_GET['results_per_page']) ? $_GET['results_per_page'] : $this->bean->settings['results_per_page'],
+      );
+    }
+
+    // Add pager.
+    if ($this->bean->settings['pager']) {
+      $query = apachesolr_current_query($search_page['env_id']);
+      $response = apachesolr_static_response_cache($query->getSearcher());
+
+      $total = $response->response->numFound;
+      $params = $query->getParams();
+
+      // @todo: make search text alterable.
+      $rows = min(count($results), $params['rows']);
+      $pager_description_text = variable_get('solr_bean_pager_description', 'Showing items @start through @end of @total.');
+      $content['bean'][$bean->delta]['pager'] = array(
+        'description' => array(
+          '#markup' => t($pager_description_text, array(
+            '@start' => $query->page * $params['rows'] + 1,
+            '@end' => $query->page * $params['rows'] + $rows,
+            '@total' => $total,
+          )),
+        ),
+        'pager' => array(
+          '#theme' => 'pager',
+          '#tags' => NULL,
+          '#element' => $bean->settings['pager_element'],
+        ),
+      );
+    }
 
     // Allow bean styles to alter build.
     if (module_exists('bean_style')) {
@@ -280,7 +364,7 @@ class SolrBean extends BeanPlugin {
       $params['fq'] = isset($conditions['fq']) ? $conditions['fq'] : array();
 
       // Set the number of rows from the bean.
-      $rows = isset($this->bean->settings['results_per_page']) ? $this->bean->settings['results_per_page'] : $search_page['settings']['apachesolr_search_per_page'];
+      $rows = isset($_GET['results_per_page']) ? $_GET['results_per_page'] : $this->bean->settings['results_per_page'];
       if (!empty($rows)) {
         $params['rows'] = $rows;
       }
@@ -623,10 +707,26 @@ class SolrBean extends BeanPlugin {
 
     $searcher = $query->getSearcher();
     $elements = facetapi_build_realm($searcher, 'block');
+    $facet_info = $this->getFacetInfo();
+
+    uasort($this->bean->facets, 'drupal_sort_weight');
 
     $build = array();
     $ids = array();
     foreach ($this->bean->facets as $key => $facet) {
+      // Handle special case of search keys.
+      if ($facet['visible'] && $key == 'keys') {
+        $build['keys'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Enter terms'),
+          '#default_value' => isset($_GET['keys']) ? $_GET['keys'] : $facet['default_value'],
+          '#size' => 20,
+          '#maxlength' => 255,
+          '#weight' => $facet['weight'],
+        );
+        continue;
+      }
+
       if (!$facet['visible'] || !isset($elements[$key])) {
         continue;
       }
@@ -641,20 +741,28 @@ class SolrBean extends BeanPlugin {
       $build[$delta] = $elements[$key];
       $block->region = NULL;
       $block->delta = 'apachesolr-' . $key;
+
       // @todo: the final themed block's div id attribute does not coincide with "real" block's id (see facetapi_get_delta_map())
       $build[$delta]['#block'] = $block;
       $build[$delta]['#theme_wrappers'][] = 'block';
-      $build['#sorted'] = TRUE;
+      $build[$delta]['#weight'] = $facet['weight'];
 
+      // Get global settings for a facet in order to determine display style.
+      // Only show facet as a select box if it's set to have an 'and' operator.
+      $global_settings = $this->getFacetapiAdapter()->getFacet($facet_info[$key])->getSettings();
       $ids[] = array(
         'selector' => '#' . $build[$delta]['#attributes']['id'],
+        'type' => $global_settings->settings['operator'],
         'title' => $build[$delta]['#title'],
       );
     }
 
     // Add select widget js.
     if ($ids) {
-      $build['#attached']['js'][] = drupal_get_path('module', 'solr_bean') . '/solr-bean-facet.js';
+      $solr_bean_path = drupal_get_path('module', 'ombusearch');
+      $build['#attached']['css'][] = $solr_bean_path . '/css/solr-bean.css';
+      $build['#attached']['js'][] = $solr_bean_path . '/js/solr-bean-facet.js';
+      $build['#attached']['library'][] = array('system', 'jquery.bbq');
       $build['#attached']['js'][] = array(
         'data' => array('solrBeanSelectWidget' => $ids),
         'type' => 'setting',

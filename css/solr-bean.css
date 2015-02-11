@@ -1,0 +1,48 @@
+.solr-bean-search-form ul,
+.solr-bean-search-form li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.solr-bean-search-form ul.facetapi-facetapi-links > li ul.expanded {
+  margin-left: 30px;
+}
+.solr-bean-search-form a.facetapi-active,
+.solr-bean-search-form a.facetapi-inactive {
+  display: inline-block;
+  /*font-family: @font-family-sans-serif;*/
+  font-size: 15px;
+  line-height: 1.5em;
+  position: relative;
+  padding: 0.25em 0 0.25em 30px;
+  /*color: @color-emerald-green;*/
+}
+.solr-bean-search-form a.facetapi-active:before,
+.solr-bean-search-form a.facetapi-inactive:before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid gray;
+  border-radius: 2px;
+  /*background-color: @color-form-input-checkbox-background;*/
+  background-color: white;
+}
+.solr-bean-search-form a.facetapi-active.facetapi-active:after,
+.solr-bean-search-form a.facetapi-inactive.facetapi-active:after {
+  content: "✓";
+  font-size: 20px;
+  line-height: 0.75em;
+  position: absolute;
+  top: 9px;
+  left: 1px;
+  width: 22px;
+  color: gray;
+  text-align: center;
+}
+.solr-bean-search-form a.facetapi-active button.close,
+.solr-bean-search-form a.facetapi-inactive button.close {
+  display: none;
+}
