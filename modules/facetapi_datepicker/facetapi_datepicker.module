@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * Implements hook_facetapi_widgets().
+ */
+function facetapi_datepicker_facetapi_widgets() {
+  return array(
+    'facetapi_datepicker' => array(
+      'handler' => array(
+        'label' => t('Datepicker'),
+        'class' => 'FacetapiDatepicker',
+        'query types' => array('date'),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_forms().
+ *
+ * Set callbacks for select facet forms.
+ */
+function facetapi_datepicker_forms() {
+  $forms = array();
+  foreach (facetapi_get_searcher_info() as $searcher => $searcher_info) {
+    foreach (facetapi_get_facet_info($searcher) as $facet) {
+      $forms['facetapi_datepicker_' .  $facet['name']]['callback'] = 'facetapi_datepicker';
+    }
+  }
+  return $forms;
+}

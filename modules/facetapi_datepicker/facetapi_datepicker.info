@@ -1,0 +1,7 @@
+name = FacetAPI Datepicker
+description = FacetAPI Datepicker Widget.
+package = Search Toolkit
+core = 7.x
+dependencies[] = facetapi
+dependencies[] = date_popup
+files[] = facetapi/facetapi_datepicker.inc
