@@ -84,16 +84,6 @@ function ombusearch_facetapi_url_processors() {
 }
 
 /**
- * Implements hook_facetapi_search_info_alter().
- */
-function ombusearch_facetapi_searcher_info_alter(array &$searcher_info) {
-  foreach ($searcher_info as &$info) {
-    // Use solr bean wrapper for url processing.
-    $info['url processor'] = 'ombusearch_url_processor';
-  }
-}
-
-/**
  * Implements hook_theme().
  */
 function ombusearch_theme($existing, $type, $theme, $path) {

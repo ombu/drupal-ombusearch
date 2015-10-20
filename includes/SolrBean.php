@@ -453,11 +453,12 @@ class SolrBean extends BeanPlugin {
       // adapter.
       $adapter = facetapi_adapter_load($searcher);
       if ($adapter) {
-        $adapter->getUrlProcessor()->setBean($this->bean);
+        $processor = $adapter->loadUrlProcessor('ombusearch_url_processor');
+        $processor->setBean($this->bean);
 
         // Fetches, normalizes, and sets filter params.
-        $filter_key = $adapter->getUrlProcessor()->getFilterKey();
-        $params = $adapter->getUrlProcessor()->fetchParams();
+        $filter_key = $processor->getFilterKey();
+        $params = $processor->fetchParams();
         $adapter->setParams($params, $filter_key);
 
         // Realm could be added but we want all the facets.
