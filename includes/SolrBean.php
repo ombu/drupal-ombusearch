@@ -132,12 +132,14 @@ class SolrBean extends BeanPlugin {
 
       // Get available values for a facet, if exists.
       if (!empty($facet['values callback']) && function_exists($facet['values callback'])) {
+        $select_options = call_user_func($facet['values callback'], $facet);
         $form['facets'][$key]['default_value'] = array(
           '#type' => 'select',
           '#title' => t('Default value'),
           '#title_display' => 'invisible',
-          '#options' => array('' => '- None -') + call_user_func($facet['values callback'], $facet),
+          '#options' =>  $select_options,
           '#default_value' => $options['default_value'],
+          '#empty_option' => '- None -',
           '#multiple' => TRUE,
         );
       }
