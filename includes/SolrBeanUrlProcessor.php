@@ -76,9 +76,15 @@ class SolrBeanUrlProcessor extends FacetapiUrlProcessorStandard {
 
         if (!empty($data['default_value']) && !in_array($data['field'], $filter_queries)) {
           if (is_array($data['default_value'])) {
-            $data['default_value'] = array_filter($data['default_value']);
-            foreach ($data['default_value'] as $value) {
-              $conditions['f'][] = $data['field'] . ':' . $value;
+            // If facet is a date field, handle complex faceting.
+            if (isset($data['default_value']['date_range_start_op'])) {
+              $conditions['f'][] = $data['field'] . ':' . $this->generateDateRange($data['default_value']);
+            }
+            else {
+              $data['default_value'] = array_filter($data['default_value']);
+              foreach ($data['default_value'] as $value) {
+                $conditions['f'][] = $data['field'] . ':' . $value;
+              }
             }
           }
           else {
@@ -128,5 +134,31 @@ class SolrBeanUrlProcessor extends FacetapiUrlProcessorStandard {
     else {
       return parent::setBreadcrumb();
     }
+  }
+
+  /**
+   * Helper function to generate date range for date facets.
+   */
+  protected function generateDateRange($range) {
+    if ($range['date_range_start_op'] == 'NOW') {
+      $lower = apachesolr_date_iso(time());
+    }
+    elseif ($range['date_range_start_op'] === 0) {
+      $lower = apachesolr_date_iso(strtotime('-100 year'));
+    }
+    else {
+      $lower = apachesolr_date_iso(strtotime($range['date_range_start_op'] . $range['date_range_start_amount'] . ' ' . $range['date_range_start_unit']));
+    }
+    if ($range['date_range_end_op'] == 'NOW') {
+      $upper = apachesolr_date_iso(strtotime('+1 day'));
+    }
+    elseif ($range['date_range_end_op'] === 0) {
+      $upper = apachesolr_date_iso(strtotime('+100 year'));
+    }
+    else {
+      $upper = apachesolr_date_iso(strtotime($range['date_range_end_op'] . $range['date_range_end_amount'] . ' ' . $range['date_range_end_unit']));
+    }
+
+    return "[$lower TO $upper]";
   }
 }

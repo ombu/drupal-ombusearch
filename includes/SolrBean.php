@@ -41,6 +41,8 @@ class SolrBean extends BeanPlugin {
   public function form($bean, $form, &$form_state) {
     $form = parent::form($bean, $form, $form_state);
 
+    $form['#attached']['css'][] = drupal_get_path('module', 'ombusearch') . '/css/solr-bean-admin.css';
+
     // Set the bean for later use.
     $this->setBean($bean);
 
@@ -141,6 +143,98 @@ class SolrBean extends BeanPlugin {
           '#default_value' => $options['default_value'],
           '#empty_option' => '- None -',
           '#multiple' => TRUE,
+        );
+      }
+      // If facet is a date, show date filters.
+      else if (isset($facet['query type']) && $facet['query type'] == 'date') {
+        $form['facets'][$key]['default_value']['date_range_start_op'] = array(
+          '#prefix' => '<div class="date-range-start">',
+          '#type' => 'select',
+          '#title' => t('Date Range'),
+          '#options' => array(
+            'NOW' => t('today'),
+            '-' => t('past'),
+            '+' => t('future'),
+            '0' => t('beginning of time'),
+          ),
+          '#tree' => TRUE,
+          '#default_value' => isset($options['default_value']['date_range_start_op']) ? $options['default_value']['date_range_start_op'] : 0,
+        );
+        $form['facets'][$key]['default_value']['date_range_start_amount'] = array(
+          '#type' => 'textfield',
+          '#size' => 5,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="facets[' . $key . '][default_value][date_range_start_op]"]' => array(
+                array('value' => '-'),
+                array('value' => '+'),
+              ),
+            ),
+          ),
+          '#default_value' => isset($options['default_value']['date_range_start_amount']) ? $options['default_value']['date_range_start_amount'] : 0,
+        );
+        $form['facets'][$key]['default_value']['date_range_start_unit'] = array(
+          '#suffix' => '</div>',
+          '#type' => 'select',
+          '#options' => array(
+            'HOUR' => t('hour'),
+            'DAY' => t('day'),
+            'MONTH' => t('month'),
+            'YEAR' => t('year'),
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="facets[' . $key . '][default_value][date_range_start_op]"]' => array(
+                array('value' => '+'),
+                array('value' => '-'),
+              ),
+            ),
+          ),
+          '#default_value' => isset($options['default_value']['date_range_start_unit']) ? $options['default_value']['date_range_start_unit'] : 0,
+        );
+        $form['facets'][$key]['default_value']['date_range_end_op'] = array(
+          '#prefix' => '<div class="date-range-end">',
+          '#type' => 'select',
+          '#title' => t('To'),
+          '#options' => array(
+            'NOW' => t('today'),
+            '-' => t('past'),
+            '+' => t('future'),
+            '0' => t('end of time'),
+          ),
+          '#default_value' => isset($options['default_value']['date_range_end_op']) ? $options['default_value']['date_range_end_op'] : 0,
+        );
+        $form['facets'][$key]['default_value']['date_range_end_amount'] = array(
+          '#type' => 'textfield',
+          '#size' => 5,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="facets[' . $key . '][default_value][date_range_end_op]"]' => array(
+                array('value' => '+'),
+                array('value' => '-'),
+              ),
+            ),
+          ),
+          '#default_value' => isset($options['default_value']['date_range_end_amount']) ? $options['default_value']['date_range_end_amount'] : '',
+        );
+        $form['facets'][$key]['default_value']['date_range_end_unit'] = array(
+          '#suffix' => '</div>',
+          '#type' => 'select',
+          '#options' => array(
+            'HOUR' => t('hour'),
+            'DAY' => t('day'),
+            'MONTH' => t('month'),
+            'YEAR' => t('year'),
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="facets[' . $key . '][default_value][date_range_end_op]"]' => array(
+                array('value' => '+'),
+                array('value' => '-'),
+              ),
+            ),
+          ),
+          '#default_value' => isset($options['default_value']['date_range_end_unit']) ? $options['default_value']['date_range_end_unit'] : '',
         );
       }
       // Otherwise just show a simple textfield.
