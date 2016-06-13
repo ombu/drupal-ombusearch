@@ -41,7 +41,7 @@ function ombusearch_bean_types() {
   $plugin_path = drupal_get_path('module', 'ombusearch');
 
   $plugins['solr_bean'] = array(
-    'label' => t('Search Block'),
+    'label' => t('Queried content'),
     'handler' => array(
       'class' => 'SolrBean',
       'parent' => 'BeanPlugin',
