@@ -420,13 +420,13 @@ class SolrBean extends BeanPlugin {
       $rows = min(count($results), $params['rows']);
       $pager_description_text = variable_get('solr_bean_pager_description', 'Showing items @start through @end of @total.');
       $content['bean'][$bean->delta]['pager'] = array(
-        'description' => array(
-          '#markup' => t($pager_description_text, array(
-            '@start' => $query->page * $params['rows'] + 1,
-            '@end' => $query->page * $params['rows'] + $rows,
-            '@total' => $total,
-          )),
-        ),
+        // 'description' => array(
+        //   '#markup' => t($pager_description_text, array(
+        //     '@start' => $query->page * $params['rows'] + 1,
+        //     '@end' => $query->page * $params['rows'] + $rows,
+        //     '@total' => $total,
+        //   )),
+        // ),
         'pager' => array(
           '#theme' => 'pager',
           '#tags' => NULL,
